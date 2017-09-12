@@ -1,0 +1,59 @@
+@extends('bgp')
+
+@section('title', 'home')
+
+@section('home')
+class = "active"
+@endsection
+
+@section('content')
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-3 col-md-offset-1" height = "500px">
+        <a id="links" href="/links" role="button" class="btn btn-default btn-lg btn-block"><h2>Links</h2></a>
+      </div>
+      <div class="col-md-3">
+        <a id="monitors" href="/monitors" role="button" class="btn btn-default btn-lg btn-block"><h2>Monitors</h2></a>
+      </div>
+      <div class="col-md-3">
+        <a id="origins" href="/origins" role="button" class="btn btn-default btn-lg btn-block"><h2>Origins</h2></a>
+      </div>
+    </div>
+  </div>
+  <script>
+    $.ajaxSetup({
+      url: "/",
+      type: "POST",
+      headers: { 'X-CSRF-TOKEN' : '{{ csrf_token() }}' }
+    });
+    var links = $('#links');
+    var monitors = $('#monitors');
+    var origins = $('#origins');
+    $.ajax({
+      data:{type:'init'},
+      success:function(data){
+        var links_html = [];
+        var monitors_html = [];
+        var origins_html = [];
+        links_html.push('<h2>Links</h2>');
+        links_html.push('<h3>Total:' + data.change.c_links + '</h3>');
+        links_html.push('<h4>Oldest:' + data.links.first + '</h4>');
+        links_html.push('<h4>Latest:' + data.links.last + '</h4>');
+        links_html.push('<h4>Updated:' + data.change.n_links + '</h4>');
+        links.html(links_html.join(''));
+        monitors_html.push('<h2>Monitors</h2>');
+        monitors_html.push('<h3>Total:' + data.change.c_monitors + '</h3>');
+        monitors_html.push('<h4>Oldest:' + data.monitors.first + '</h4>');
+        monitors_html.push('<h4>Latest:' + data.monitors.last + '</h4>');
+        monitors_html.push('<h4>Updated:' + data.change.n_monitors + '</h4>');
+        monitors.html(monitors_html.join(''));
+        origins_html.push('<h2>Origins</h2>');
+        origins_html.push('<h3>Total:' + data.change.c_origins + '</h3>');
+        origins_html.push('<h4>Oldest:' + data.origins.first + '</h4>');
+        origins_html.push('<h4>Latest:' + data.origins.last + '</h4>');
+        origins_html.push('<h4>Updated:' + data.change.n_origins + '</h4>');
+        origins.html(origins_html.join(''));
+      }
+    });
+  </script>
+@endsection
