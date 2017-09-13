@@ -65,9 +65,20 @@ def whois_query(begin,end):
 				r_fp.write(line)
 				#r_fp.write('\n')
 	#deal no find
+	path_left_left="/data/repeat/left2/whois_result_left_left_"+str(begin)+'~'+str(end)
+	ll_fp=open(path_left_left,'a')
+	for line in left_ip:
+		result={}
+		#result['ip']=ip_list[i]
+		result['content']=""
+		result['ip']=line
+		ll_fp.write(str(result))
+		#w_fp.write(data)
+		ll_fp.write('\n')
+	ll_fp.close()
 	while len(left_ip)>0:
-		print str(begin)+'~'+str(end)+":"+"left:"+len(left_ip)+"current ip:"+left_ip[0]
-		arg = 'whois '+left_ip[0];
+		print str(begin)+'~'+str(end)+":"+"last left:"+str(len(left_ip))+"current ip:"+left_ip[0]
+		arg = 'whois '+left_ip[0]
 		query_result=os.popen(arg)
 		data=""
 		for line in query_result:
@@ -81,9 +92,9 @@ def whois_query(begin,end):
 		data=data.strip()							#delete whitespace in head or tail
 		#print data	
 		if len(data)==0 or data=="Query rate limit exceeded":
-			print str(begin)+'~'+str(end)+":left_ip query fail"+"current ip:"+left_ip[0]
-			lefp_ip.append(left_ip[0])
-			del lefp_ip[0]
+			#print str(begin)+'~'+str(end)+":left_ip query fail"+"current ip:"+left_ip[0]
+			left_ip.append(left_ip[0])
+			del left_ip[0]
 			continue
 		result={}
 		#result['ip']=ip_list[i]
