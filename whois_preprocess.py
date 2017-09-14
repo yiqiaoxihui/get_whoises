@@ -68,7 +68,7 @@ def ip_n_to_ip(ip_num):
 
 conn=MongoClient('127.0.0.1',27017)
 db=conn.ly
-my_mongo=db.whois
+my_mongo=db.whois1
 repeat=0
 use=0
 s=0
@@ -76,7 +76,7 @@ undeal=0
 noquery=0
 whois_list=[]
 hash_dic={}
-whois_fp=open('/data/whois_result_1~89848','r')#/home/ly/Documents/all
+whois_fp=open('/data/all','r')#/home/ly/Documents/all
 while True:
     line = whois_fp.readline()
     if line=="":

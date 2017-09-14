@@ -65,8 +65,10 @@ def whois_query(begin,end):
 				r_fp.write(line)
 				#r_fp.write('\n')
 	#deal no find
+	#left_ip=set(left_ip)
 	path_left_left="/data/repeat/left2/whois_result_left_left_"+str(begin)+'~'+str(end)
 	ll_fp=open(path_left_left,'a')
+
 	for line in left_ip:
 		result={}
 		#result['ip']=ip_list[i]

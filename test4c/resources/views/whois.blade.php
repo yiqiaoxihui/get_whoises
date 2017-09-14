@@ -7,7 +7,7 @@
 
 @section('main_container')
   <div class="right_col" role="main">
-    <center><h1>BGP Origins Data</h1></center>
+    <center><h1>Whois Query</h1></center>
     <form id="toolbar" form="bs-example bs-example-form" role="form" onsubmit="searchData(); return false;">
       <div class="input-group col-md-4 col-md-offset-8">
         <div class="input-group-btn">
