@@ -68,7 +68,7 @@ def ip_n_to_ip(ip_num):
 
 conn=MongoClient('127.0.0.1',27017)
 db=conn.ly
-my_mongo=db.whois2
+my_mongo=db.whois1
 repeat=0
 use=0
 s=0
@@ -83,6 +83,9 @@ while True:
         break
     else:
 		s=s+1
+		if line.find("\"")==-1:
+			line=line.replace("','ip': '","\",'ip': '")
+			line=line.replace("{'content': '","{'content': \"")
 		dic=eval(line)
 		content=dic['content']#(\d+.\d+.\d+.\d+) - (\d+.\d+.\d+.\d+)
 
@@ -106,7 +109,8 @@ while True:
 			print str(ip_range[0][0])+'~'+str(ip_range[0][1])
 			
 			#print hash
-			#content=content.decode("unicode_escape")
+			content=content.decode("unicode_escape")
+			#content=content.encode('utf-8')
 			my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 		else:
 			ip_range=re.findall(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})",content)
@@ -124,10 +128,11 @@ while True:
 				print str(ip_begin)+'~'+str(ip_end)
 				ip_begin=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
 				ip_end=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
-				#content=content.decode("unicode_escape")
+				content=content.decode("unicode_escape")
+				#content=content.encode('utf-8')
 				my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 			else:
-				ip_range=re.findall(r"inetnum:(\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})",content)
+				ip_range=re.findall(r"inetnum: {0,1}(\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})",content)
 				#x.x.x/n
 				if ip_range!=[]:
 					hash=md5(content)#skip the same content
@@ -142,10 +147,11 @@ while True:
 					print str(ip_begin)+'~'+str(ip_end)
 					ip_begin=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
 					ip_end=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
-					#content=content.decode("unicode_escape")
+					content=content.decode("unicode_escape")
+					#content=content.encode('utf-8')
 					my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 				else:
-					ip_range=re.findall(r"inetnum:(\d{1,3}\.\d{1,3})\/(\d{1,2})",content)
+					ip_range=re.findall(r"inetnum: {0,1}(\d{1,3}\.\d{1,3})\/(\d{1,2})",content)
 					#x.x/n
 					if ip_range!=[]:
 						hash=md5(content)#skip the same content
@@ -160,10 +166,11 @@ while True:
 						print str(ip_begin)+'~'+str(ip_end)
 						ip_begin=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
 						ip_end=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
-						#content=content.decode("unicode_escape")
+						content=content.decode("unicode_escape")
+						#content=content.encode('utf-8')
 						my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 					elif len(content)>0 and content!="Query rate limit exceeded":
-						#print line
+						print line
 						undeal=undeal+1
 					else:
 						noquery=noquery+1

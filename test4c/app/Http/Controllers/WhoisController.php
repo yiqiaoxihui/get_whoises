@@ -13,6 +13,45 @@ class WhoisController extends Controller
     	echo $count;
         return view('whois', ['input' => '']);
     }
+
+    public function whois_api(Request $request){
+      $ip=$request->ip;
+      $result=array();
+      if(preg_match("/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/",$ip)){
+        $ip_n = bindec(decbin(ip2long($ip)));
+        $rows = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->get();
+        $i=0;
+        foreach($rows as $k=>$row)
+        {
+          //print_r($row);
+          //print_r("</br>");
+          $data=$row->content;
+          preg_match_all("/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) {0,1}- {0,1}(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/",$data, $ips,PREG_SET_ORDER);
+          if(count($ips)>1){
+            //print_r(count($ips));
+            //print_r($ips[count($ips)-1][1]);
+            $ip_begin=bindec(decbin(ip2long($ips[count($ips)-1][1])));
+            $ip_end=bindec(decbin(ip2long($ips[count($ips)-1][2])));
+            if($ip_n>=$ip_begin && $ip_n<=$ip_end){
+              //unset($rows[$k]);
+              $result[$i]=$row;
+/*              print_r($ips[count($ips)-1][1]);
+              echo "~";
+              print_r($ips[count($ips)-1][2]);
+              print_r("</br>");*/
+              $i++;
+            }
+
+          }
+        }
+        //print_r(count($result));
+        //return json_encode($result);
+      }else{
+        return -1;
+      }
+      
+
+    }
     public function ip_n_to_ip($ip,$ipn){
       $elements=explode(".", $ip);
       $len=count($elements);
@@ -77,12 +116,31 @@ class WhoisController extends Controller
           if($_POST['type'] == 'data'){
             $params = json_decode($_POST['data']);
             if(strlen($_POST['content']) > 0){
+              $result=array();
               if(isset($params->sort)){
                 if ($_POST['search'] == 'ip'){
                   $ip=$_POST['content'];
                   $ip_n = bindec(decbin(ip2long($ip)));
                   echo $ip_n;
                   $rows = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->skip($params->offset)->take($params->limit)->orderBy($params->sort, $params->order)->get();
+                  $detail_count=0;
+                  foreach($rows as $k=>$row)
+                  {
+                    //print_r($row);
+                    //print_r("</br>");
+                    $data=$row->content;
+                    preg_match_all("/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) {0,1}- {0,1}(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/",$data, $ips,PREG_SET_ORDER);
+                    if(count($ips)>1){
+                      $ip_begin=bindec(decbin(ip2long($ips[count($ips)-1][1])));
+                      $ip_end=bindec(decbin(ip2long($ips[count($ips)-1][2])));
+                      if($ip_n>=$ip_begin && $ip_n<=$ip_end){
+                        //unset($rows[$k]);
+                        $result[$detail_count]=$row;
+                        $detail_count++;
+                      }
+                    }
+                  }
+                  $rows=$result;
                 }
                 else{
                   $rows = Whois::where('content', 'like', $_POST['content'])->skip($params->offset)->take($params->limit)->orderBy($params->sort, $params->order)->get();
@@ -93,6 +151,25 @@ class WhoisController extends Controller
                   $ip=$_POST['content'];
                   $ip_n = bindec(decbin(ip2long($ip)));
                   $rows = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->skip($params->offset)->take($params->limit)->get();
+                  $detail_count=0;
+
+                  foreach($rows as $k=>$row)
+                  {
+                    //print_r($row);
+                    //print_r("</br>");
+                    $data=$row->content;
+                    preg_match_all("/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) {0,1}- {0,1}(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/",$data, $ips,PREG_SET_ORDER);
+                    if(count($ips)>1){
+                      $ip_begin=bindec(decbin(ip2long($ips[count($ips)-1][1])));
+                      $ip_end=bindec(decbin(ip2long($ips[count($ips)-1][2])));
+                      if($ip_n>=$ip_begin && $ip_n<=$ip_end){
+                        //unset($rows[$k]);
+                        $result[$detail_count]=$row;
+                        $detail_count++;
+                      }
+                    }
+                  }
+                  $rows=$result;
                 }
                 else{
                   $rows = Whois::where('content', 'like', '%'.$_POST['content'].'%')->skip($params->offset)->take($params->limit)->get();
@@ -101,11 +178,14 @@ class WhoisController extends Controller
               if ($_POST['search'] == 'ip'){
                 $ip=$_POST['content'];
                 $ip_n = bindec(decbin(ip2long($ip)));
-                $total = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->count();
+                //$total = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->count();
+                $total=count($rows);
                 if($total<=0){
+                  //
                   WhoisController::query_now($ip);
                   //$ip_n = bindec(decbin(ip2long($ip)));
                   $rows = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->skip($params->offset)->take($params->limit)->get();
+                  $total = Whois::where('ip_begin', '<=', $ip_n)->where('ip_end', '>=', $ip_n)->count();
                 }
               }
               else{

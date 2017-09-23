@@ -24,7 +24,7 @@ def whois_query(begin,end):
 		else:
 			dic=eval(line)
 			left_ip.append(dic['ip'])
-	#left_ip=set(left_ip)
+	left_ip=set(left_ip)
 	print  "query"+str(begin)+'~'+str(end)+"count:"+str(len(left_ip))
 	# for line in left_ip:
 	# 	result={}

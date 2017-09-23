@@ -19,3 +19,4 @@ Route::resource('/asnames', 'AsnamesController');
 Route::resource('/ipquery', 'IpqueryController');
 Route::get('/test', function(){return view('test');});
 Route::resource('whois', 'WhoisController');
+Route::get('whois_api','WhoisController@whois_api');
