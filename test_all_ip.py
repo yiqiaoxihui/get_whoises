@@ -82,6 +82,7 @@ while len(left_ip)>0:
 		del left_ip[0]
 		continue
 	data="{'content': '"+data+"','ip': '"+left_ip[0]+"'}"
+	
 	whois_all_ip.write(data)	
 	whois_all_ip.write('\n')
 	del left_ip[0]
