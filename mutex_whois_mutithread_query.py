@@ -21,8 +21,8 @@ def whois_query(begin,end):
 	left_ip=[]
 	print "query"+str(begin)+'~'+str(end)+"start!"
 	for i in range(begin-1,end):
-		print str(begin)+'~'+str(end)+":stop!"
 		if(end_thread_signal==1):
+			print str(begin)+'~'+str(end)+":stop!"
 			for j in range(i,end):
 				if mutex.acquire(True):
 					wl_fp.write(ip_list[j])
@@ -107,6 +107,8 @@ def listen_key():
 			end_thread_signal=1
 			print "end_thread_signal:"+str(end_thread_signal)
 			break
+		if end_thread_signal==2:
+			break
 
 def main():
 	if __name__=='__main__':
@@ -170,6 +172,7 @@ def main():
 		w_fp.close()
 		wl_fp.close
 		print "all query completed!"
+		end_thread_signal=2
 		print len(ip_list)
 		#for num in range(0,thread_count):
 		#	print str(parts[num][0])+'~'+str(parts[num][1])
