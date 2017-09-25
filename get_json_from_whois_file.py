@@ -15,7 +15,7 @@ def md5(str):
     m.update(str)
     return m.hexdigest()
 def get_useful_info_from_content(ip,content):
-	main_content_array_k_v={}
+	main_content_array_k_v=collections.OrderedDict()
 	main_content_array_k_v["IP_addr"]=ip
 	main_content_array_k_v["whois"]=collections.OrderedDict()
 	object_items=[]
@@ -30,40 +30,64 @@ def get_useful_info_from_content(ip,content):
 	object_attrs=main_content.split("\n")
 	attr_item=[]
 	i=0
-	descr_list=[]
-	remarks_list=[]
+	dns=collections.OrderedDict()
+	# dns['nserver']=[]
+	# dns['nsstat']=[]
+	# dns['nslastaa']=[]
+
 	#useful=['inetnum','NetRange','descr','CIDR','NetName','Organization','Updated','NetType']
 	all_key=[
-	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver',
-	'NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization',
-	'inetnum','netname','descr','country','geoloc','language','org','admin-c',
-	'tech-c','remarks','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt','status','notify',
-	'aut-num','abuse-c','owner','owerid','reponsable','inetrev','nserver','nsstat','nslastaa',
-	'Assigned Date','Return Date','Last Update',
-	'RegDate','Updated','Ref',
+	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
+	'NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization','RegDate','Updated','Comment','Ref',
+	'inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','phone','owner-c',
+	'netname','descr','country','geoloc','language','org','sponsoring-org','admin-c',
+	'tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
+	'inetrev','dns',
 	'created','last-modified','changed','source'
 	]
-	nserver_count=0
-	nsstat_count=0
-	nslastaa_count=0
-	main_content_array_k_v["whois"]["descr"]=[]
-	main_content_array_k_v["whois"]["remarks"]=[]
-	main_content_array_k_v["whois"]["dns"]=[]
+	lacnic=['inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','country','phone','owner-c','tech-c','status',
+	'inetrev','nserver','nsstat','nslastaa','created','changed']
+
+	dns_list=['nserver','nsstat','nslastaa']
+	array_key=['descr','remarks','Comment','mnt-by','mnt-lower','mnt-routes','mnt-domains','changed','dns']
+	#main_content_array_k_v["whois"]["remarks"]=[]
+	#main_content_array_k_v["whois"]["dns"]=[]
 	for object_attr in object_attrs:
 		for key in all_key:
 			position=object_attr.find(key)
-			if position>=0:
+			if position>=0 and position<=7:
+				if key=="owner" and object_attr[(position+len(key)):].strip()[0:1]!=":":
+					continue
 				value_position=position+len(key)+1 #+1 for : or ]
 				value=object_attr[value_position:].strip()
-				if key=="descr" or key=="remarks":
-					main_content_array_k_v["whois"][key].append(value)
+				if key in array_key:
+					if main_content_array_k_v["whois"].has_key(key):
+						main_content_array_k_v["whois"][key].append(value)
+					else:
+						main_content_array_k_v["whois"][key]=[]
+						main_content_array_k_v["whois"][key].append(value)
+				elif key in dns_list:
+					if main_content_array_k_v["whois"].has_key('dns'):
+						dns[key]=value
+						if len(dns.keys())>=3:
+							main_content_array_k_v["whois"]['dns'].append(dns)
+							dns=collections.OrderedDict()
+					else:
+						main_content_array_k_v["whois"]['dns']=[]
+						dns[key]=value
 				else:
 					main_content_array_k_v["whois"][key]=value
 				break
-	if len(main_content_array_k_v["whois"]["descr"])==0:
-		main_content_array_k_v["whois"].pop("descr")
-	if len(main_content_array_k_v["whois"]["remarks"])==0:
-		main_content_array_k_v["whois"].pop("remarks")
+	exist_key=set(main_content_array_k_v["whois"].keys()) & set(array_key)
+	for key in exist_key:
+		if len(main_content_array_k_v["whois"][key])==0:
+			main_content_array_k_v["whois"].pop(key)
+	# if main_content_array_k_v["whois"].has_key("descr") and len(main_content_array_k_v["whois"]["descr"])==0:
+	# 	main_content_array_k_v["whois"].pop("descr")
+	# if main_content_array_k_v["whois"].has_key("remarks") and len(main_content_array_k_v["whois"]["remarks"])==0:
+	# 	main_content_array_k_v["whois"].pop("remarks")
+	# if main_content_array_k_v["whois"].has_key("Comment") and len(main_content_array_k_v["whois"]["Comment"])==0:
+	# 	main_content_array_k_v["whois"].pop("Comment")
 		# attr_item=object_attr.split(":")
 		# if(len(attr_item)!=2):
 		# 	#print object_attr
@@ -80,7 +104,7 @@ def get_useful_info_from_content(ip,content):
 	jsonStr= json.dumps(main_content_array_k_v)
 	#print jsonStr
 	#print "\n"
-	return jsonStr
+	return main_content_array_k_v
 
 conn=MongoClient('127.0.0.1',27017)
 db=conn.ly
@@ -95,8 +119,8 @@ write2json_filepath=raw_input("please input write to json path:")
 write2json_filepath='/data/write_to_json.txt'
 whois_filepath="/data/whois_all_result_8724"
 whois_fp=open(whois_filepath,'r')#/home/ly/Documents/all
-fpw=open(write2json_filepath,"w")
-fpw.write("[")
+# fpw=open(write2json_filepath,"w")
+# fpw.write("[")
 while True:
 	raw_content = whois_fp.readline()
 	if raw_content=="":
@@ -110,16 +134,18 @@ while True:
 			print "error ip type:"+str(m)
 			continue
 		jsonStr=get_useful_info_from_content(ip,content)
-		#json_list.append(json_list)
+		json_list.append(jsonStr)
 		json_count=json_count+1
 		#if(json_count>=10000)
-		fpw.write(jsonStr)
-		fpw.write(",\n")
-fpw.seek(-2,2)
-fpw.write("\n]")
+		# fpw.write(jsonStr)
+		# fpw.write(",\n")
+# fpw.seek(-2,2)
+with open('/home/ly/1.json','w') as json_file:
+	json.dump(json_list,json_file,indent=4)
+
 
 whois_fp.close()
-fpw.close()
+#fpw.close()
 
 
 print "json_count:"
