@@ -1,6 +1,6 @@
 ## -*- coding: utf-8 -*-
 """
-Created on Thu July 30 17:42:49 2017
+Created on Thu sep 24 17:42:49 2017
 
 @author: ly
 """
@@ -47,10 +47,11 @@ def whois_query(begin,end):
 			count=count+1
 			left_ip.append(ip_list[i])
 			continue
-		if "'" in data:
-			data='{"content":"'+data+'","ip":"'+ip_list[i]+'"}'
-		else:
-			data="{'content':'"+data+"','ip':'"+ip_list[i]+"'}"
+		#deal both have ' and " in data
+		if '"' in data:
+			data=data.replace('"','\\"')
+		data='{"content":"'+data+'","ip":"'+left_ip[0]+'"}'
+
 		if mutex.acquire(True):
 			w_fp.write(data)
 			w_fp.write('\n')
@@ -85,10 +86,11 @@ def whois_query(begin,end):
 				left_ip.append(left_ip[0])
 				del left_ip[0]
 				continue
-			if "'" in data:
-				data='{"content":"'+data+'","ip":"'+left_ip[0]+'"}'
-			else:
-				data="{'content':'"+data+"','ip':'"+left_ip[0]+"'}"
+			#solve both ' and " in data,when to dic error 
+			if '"' in data:
+				data=data.replace('"','\\"')
+			data='{"content":"'+data+'","ip":"'+left_ip[0]+'"}'
+				#data="{'content':'"+data+"','ip':'"+left_ip[0]+"'}"
 			if mutex.acquire(True):
 				w_fp.write(data)
 				w_fp.write('\n')
@@ -133,7 +135,11 @@ def main():
 		ip_list=ip_fp.readlines()
 		ip_fp.close()
 		ip_count=len(ip_list)
-		print ip_count
+		for i in range(0,ip_count):
+			ip_list[i]=ip_list[i].split()[ip_in_row]
+			ip_list[i]=ip_list[i].strip()
+			#ip_list[i]=re.sub("\d*\/\d*","1",ip_list[i])
+			#print ip_list[i]
 		ip_list=list(set(ip_list))
 		ip_count=len(ip_list)
 		print ip_count
@@ -151,12 +157,7 @@ def main():
 				parts[num].append(ip_count)
 		#preprocessing ip
 
-		for i in range(0,ip_count):
-			ip_list[i]=ip_list[i].split()[ip_in_row]
-			ip_list[i]=ip_list[i].strip()
-			#ip_list[i]=re.sub("\d*\/\d*","1",ip_list[i])
-			print ip_list[i]
-		print len(ip_list)
+
 		query_threads=[]
 		#create multithread
 		for i in range(0,thread_count):

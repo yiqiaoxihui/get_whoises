@@ -18,13 +18,17 @@ def get_useful_info_from_content(ip,content):
 	main_content_array_k_v=collections.OrderedDict()
 	main_content_array_k_v["IP_addr"]=ip
 	main_content_array_k_v["whois"]=collections.OrderedDict()
-	object_items=[]
+	object_item_list=[]
 	main_content=""
-	object_items=content.split("\n\n")
+	object_item_list=content.split("\n\n")
 	#choose the main object
-	for object_item in object_items:
-		if((object_item.find("NetRange")!=-1) or (object_item.find("inetnum")!=-1) or (object_item.find("Network Number")!=-1)or (object_item.find("IPv4 Address")!=-1)):
-			main_content=object_item
+	useful_object_list=['inetnum','NetRange','Network Number','IPv4 Address']
+	for object_item in object_item_list:
+		for useful_object in useful_object_list:
+			if useful_object in object_item:
+				main_content=object_item
+		#if((object_item.find("")!=-1) or (object_item.find("")!=-1) or (object_item.find("")!=-1)or (object_item.find("")!=-1)):
+			
 	#if main_content=="":
 		#print ip+": "+content
 	object_attrs=main_content.split("\n")
@@ -37,29 +41,48 @@ def get_useful_info_from_content(ip,content):
 
 	#useful=['inetnum','NetRange','descr','CIDR','NetName','Organization','Updated','NetType']
 	all_key=[
-	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
 	'NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization','RegDate','Updated','Comment','Ref',
-	'inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','phone','owner-c',
+	'inetnum','aut-num','abuse-c','owner','ownerid','responsible','address',
 	'netname','descr','country','geoloc','language','org','sponsoring-org','admin-c',
-	'tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
+	'phone','owner-c','tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
 	'inetrev','dns',
-	'created','last-modified','changed','source'
+	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
+	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date'
+	'created','last-modified','changed','source','parent'
 	]
-	lacnic=['inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','country','phone','owner-c','tech-c','status',
-	'inetrev','nserver','nsstat','nslastaa','created','changed']
+
+	RIPE=['inetnum','netname','descr','country','geoloc','language','org','sponsoring-org','admin-c','tech-c','status',
+	'remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt','created','last-modified','source']
+
+	APNIC=['inetnum','netname','descr','country','geoloc','language','admin-c','tech-c','status',
+	'remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-irt','changed','source']
+
+	ARIN=['NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization','RegDate','Updated','Comment','Ref']
+
+	LACNIC=['inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','country',
+	'phone','owner-c','tech-c','status','inetrev','nserver','nsstat','nslastaa','created','changed']
+
+	AFRINIC=['inetnum','netname','descr','country','org','admin-c','tech-c','status','remarks','notify',
+	'mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt','source','parent']
+
+	JPNIC=['Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update']
+
+	KRNIC=['IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date']
 
 	dns_list=['nserver','nsstat','nslastaa']
 	array_key=['descr','remarks','Comment','mnt-by','mnt-lower','mnt-routes','mnt-domains','changed','dns']
+	org_list=['org','Organization','Organization Name']
 	#main_content_array_k_v["whois"]["remarks"]=[]
 	#main_content_array_k_v["whois"]["dns"]=[]
 	for object_attr in object_attrs:
 		for key in all_key:
 			position=object_attr.find(key)
 			if position>=0 and position<=7:
-				if key=="owner" and object_attr[(position+len(key)):].strip()[0:1]!=":":
+				if object_attr[(position+len(key)):].strip()[0:1]!=":" and object_attr[(position+len(key)):].strip()[0:1]!="]":
 					continue
-				value_position=position+len(key)+1 #+1 for : or ]
-				value=object_attr[value_position:].strip()
+				value=object_attr[position+len(key):].strip()
+				#value_position=position+len(key)+1 #+1 for : or ]
+				value=value[1:].strip()
 				if key in array_key:
 					if main_content_array_k_v["whois"].has_key(key):
 						main_content_array_k_v["whois"][key].append(value)

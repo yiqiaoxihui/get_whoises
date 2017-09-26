@@ -1,5 +1,9 @@
 import json
+'''
+load json file test
 
+
+'''
 with open('/home/ly/1.json') as json_file:
 	data=json.load(json_file)
 	for item in data:

@@ -5,7 +5,10 @@ import struct
 import hashlib
 from pymongo import MongoClient
 
+'''
+judge wheather the ip in file exist in the db
 
+'''
 
 def md5(str):
     import hashlib
