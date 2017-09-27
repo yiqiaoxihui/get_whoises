@@ -12,23 +12,23 @@ def md5(str):
     m = hashlib.md5()  
     m.update(str)
     return m.hexdigest()
-def ip_n_to_ip(ip):
-	#192.1.2.3/20
-	ip_begin=""
-	ip_end=""
-	ip_int=ip[1]/8
-	ip_rem=ip[1]%8
-	elements=ip[0].split('.')
-	for i in range(0,ip_int):
-		ip_begin=ip_begin+elements[i]+'.'
-		ip_end=ip_end+elements[i]+'.'
-	ip_begin=ip_begin+str(int(elements[ip_int])&(1<(8-ip_rem)))
-	ip_end=ip_end+str(int(elements[ip_int])|((1<(8-ip_rem))-1))
-	if ip_int<3:
-		for i in range(ip_int+1,4):
-			ip_begin=ip_begin+'.'+'0'
-			ip_end=ip_end+'.'+'255'
-	return ip_begin,ip_end
+# def ip_n_to_ip(ip):
+# 	#192.1.2.3/20
+# 	ip_begin=""
+# 	ip_end=""
+# 	ip_int=ip[1]/8
+# 	ip_rem=ip[1]%8
+# 	elements=ip[0].split('.')
+# 	for i in range(0,ip_int):
+# 		ip_begin=ip_begin+elements[i]+'.'
+# 		ip_end=ip_end+elements[i]+'.'
+# 	ip_begin=ip_begin+str(int(elements[ip_int])&(1<(8-ip_rem)))
+# 	ip_end=ip_end+str(int(elements[ip_int])|((1<(8-ip_rem))-1))
+# 	if ip_int<3:
+# 		for i in range(ip_int+1,4):
+# 			ip_begin=ip_begin+'.'+'0'
+# 			ip_end=ip_end+'.'+'255'
+# 	return ip_begin,ip_end
 def ip_n_to_ip(ip_num):
 	#192.1.2.3/20
 	#print ip_num
