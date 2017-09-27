@@ -139,8 +139,11 @@ json_count=0
 #print my_mongo.count()
 whois_filepath=raw_input("please input whois file path:")
 write2json_filepath=raw_input("please input write to json path:")
-write2json_filepath='/data/write_to_json.txt'
-whois_filepath="/data/whois_all_result_8724"
+if whois_filepath=='':
+	whois_filepath="/data/whois_all_result_8724_left"
+if write2json_filepath=='':
+	write2json_filepath='/data/write_to_json.json'
+
 whois_fp=open(whois_filepath,'r')#/home/ly/Documents/all
 # fpw=open(write2json_filepath,"w")
 # fpw.write("[")
@@ -163,7 +166,7 @@ while True:
 		# fpw.write(jsonStr)
 		# fpw.write(",\n")
 # fpw.seek(-2,2)
-with open('/home/ly/1.json','w') as json_file:
+with open(write2json_filepath,'w') as json_file:
 	json.dump(json_list,json_file,indent=4)
 
 

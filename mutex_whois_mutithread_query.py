@@ -19,6 +19,7 @@ def whois_query(begin,end):
 	#global end_thread_signal,w_fp,wl_fp,ip_list
 	count=0
 	left_ip=[]
+	key_str="Found a referral to"
 	print "query"+str(begin)+'~'+str(end)+"start!"
 	for i in range(begin-1,end):
 		if(end_thread_signal==1):
@@ -42,7 +43,9 @@ def whois_query(begin,end):
 		data=re.sub(" {2,}", " ", data)
 		data=data.strip()							#delete whitespace in head or tail
 		data=data.replace("\n","\\n")
-		if len(data)==0 or data=="Query rate limit exceeded":
+		position=data.find(key_str)
+		#1,2,3 for can't get the referral server whois info
+		if len(data)==0 or data=="Query rate limit exceeded" or (position>0 and (len(data)-position-19)<50):
 			print str(begin)+'~'+str(end)+":"+"append to left_ip:"+ip_list[i]+"count:"+str(count)
 			count=count+1
 			left_ip.append(ip_list[i])
@@ -81,7 +84,8 @@ def whois_query(begin,end):
 			data=data.strip()							#delete whitespace in head or tail
 			data=data.replace("\n","\\n")
 			#print data	
-			if len(data)==0 or data=="Query rate limit exceeded":
+			position=data.find(key_str)
+			if len(data)==0 or data=="Query rate limit exceeded" or (position>0 and (len(data)-position-19)<50):
 				#print str(begin)+'~'+str(end)+":left_ip query fail"+"current ip:"+left_ip[0]
 				left_ip.append(left_ip[0])
 				del left_ip[0]
