@@ -1,7 +1,8 @@
 import json
 '''
-load json file test
-
+info:load json file test
+author:liuyang
+date:2017/9/24 15:34
 
 '''
 with open('/home/ly/1.json') as json_file:

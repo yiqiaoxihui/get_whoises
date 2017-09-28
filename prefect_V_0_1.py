@@ -23,14 +23,14 @@ def fetch_from_queue(thread_name):
 	global ip_list,ip_list_lock
 	list=[]
 	if ip_list_lock.acquire():
-		print thread_name+"begin fetch_ip:"+str(len(ip_list))
+		print thread_name+"begin fetch_ip,ip_list count:"+str(len(ip_list))
 		if(len(ip_list)>fetch_count):
 			list=ip_list[0:fetch_count]
 			ip_list=ip_list[fetch_count:]
 		else:
 			list=ip_list
 			ip_list=[]
-		print thread_name+"end fetch_ip:"+str(len(ip_list))
+		print thread_name+"end fetch_ip,ip_list count:"+str(len(ip_list))
 		ip_list_lock.release()
 	return list
 def ip_push_into_queue(ip):
@@ -99,7 +99,9 @@ def ip_n_list_to_ip_list(ipn_list):
 	return l
 def whois_query(thread_name):
 	global break_thread_signal,wr_fp,wl_fp,ip_list,write_left_ip_lock,write_result_lock
-	key_str="Found a referral to"
+	key_str="Found a referral to "
+	limit_recode=0
+	last_limit_flag=0
 	while(len(ip_list)>0):
 		ipn_list=fetch_from_queue(thread_name)
 		thread_ip_list=ip_n_list_to_ip_list(ipn_list)
@@ -117,7 +119,7 @@ def whois_query(thread_name):
 				#the break must in this place,or will lost some ip
 				break
 
-			print 'ip:'+thread_ip_list[i]
+			print thread_name+'current:'+thread_ip_list[i]
 			arg = 'whois '+thread_ip_list[i];
 			query_result=os.popen(arg)
 			data=""
@@ -133,9 +135,24 @@ def whois_query(thread_name):
 			if len(data)==0 or data=="Query rate limit exceeded":
 				print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 				#count=count+1
+				if last_limit_flag==0:
+					last_limit_flag=1
+					#limit_recode=0
+				elif last_limit_flag==1:
+					limit_recode=limit_recode+1
+					if limit_recode==100:
+						print thread_name+' sleep for 100s'
+						sleep(limit_recode)
+					elif  limit_recode>100:
+						limit_recode=limit_recode*2
+						print thread_name+' sleep:'+str(limit_recode)+'s'
+						sleep(limit_recode)
 				ip_push_into_queue(thread_ip_list[i])
 				continue
 			#deal both have ' and " in data
+			last_limit_flag=0
+			if limit_recode>0:
+				limit_recode=limit_recode/2
 			if '"' in data:
 				data=data.replace('"','\\"')
 			data='{"content":"'+data+'","ip":"'+thread_ip_list[i]+'"}'
