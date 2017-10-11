@@ -20,3 +20,5 @@ Route::resource('/ipquery', 'IpqueryController');
 Route::get('/test', function(){return view('test');});
 Route::resource('whois', 'WhoisController');
 Route::get('whois_api','WhoisController@whois_api');
+Route::get('whois_file','WhoisController@whois_file');
+Route::get('whois_file1','WhoisController@whois_file1');
