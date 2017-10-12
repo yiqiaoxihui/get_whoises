@@ -27,17 +27,11 @@ def get_useful_info_from_content(ip,content):
 		for useful_object in useful_object_list:
 			if useful_object in object_item:
 				main_content=object_item
-		#if((object_item.find("")!=-1) or (object_item.find("")!=-1) or (object_item.find("")!=-1)or (object_item.find("")!=-1)):
-			
-	#if main_content=="":
-		#print ip+": "+content
 	object_attrs=main_content.split("\n")
 	attr_item=[]
 	i=0
 	dns=collections.OrderedDict()
-	# dns['nserver']=[]
-	# dns['nsstat']=[]
-	# dns['nslastaa']=[]
+
 
 	#useful=['inetnum','NetRange','descr','CIDR','NetName','Organization','Updated','NetType']
 	all_key=[

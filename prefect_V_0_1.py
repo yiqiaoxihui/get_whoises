@@ -122,7 +122,7 @@ def whois_query(thread_name):
 			print thread_name+'current:'+thread_ip_list[i]
 			arg = 'whois '+thread_ip_list[i];
 			query_result=os.popen(arg)
-			data=""
+						data=""
 			for line in query_result:
 				if (line[0]=='%' or line[0]=='#'):    	#delete unnecessary info
 					continue
