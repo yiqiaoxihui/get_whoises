@@ -232,13 +232,13 @@ def deal_abnormal_ip(ip_begin,ip_end):
 	return ip_begin,ip_end
 
 def ip_to_number(raw_ip_begin,raw_ip_end):
-	print raw_ip_begin+"~"+raw_ip_end
+	#print raw_ip_begin+"~"+raw_ip_end
 	try:
 		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_begin)))[0])
 		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_end)))[0])
 	except Exception as e:
 		ip_begin,ip_end=deal_abnormal_ip(raw_ip_begin,raw_ip_end)
-		print ip_begin+"~"+ip_end
+		#print ip_begin+"~"+ip_end
 		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
 		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
 	return ip_begin_num,ip_end_num
@@ -257,6 +257,7 @@ noquery=0
 whois_list=[]
 hash_dic={}
 dic={}
+test_fp=open("/data/test3",'w')
 path=raw_input("please input the file path:")
 if path=='':
 	path="/data/all"
@@ -305,38 +306,45 @@ while True:
 		#x.x.x/n
 		#x.x/n
 		ip_range_regs=[
-		r'((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9]))) {0,1}- {0,1}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9])))',
-		r'((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
-		r'((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){2}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
-		r'((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){1}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])']
-		#for ip_range_reg in ip_range_regs:
-		ip_range=re.findall(ip_range_regs[2],use_content)
-		if ip_range!=[]:
-			if ip_range_regs.index(ip_range_regs[2])>0:
-				print ip_range
-				ip_begin,ip_end=ip_n_to_ip(ip_range[0])
-			else:
-				ip_begin=ip_range[0][0]
-				ip_end=ip_range[0][1]
-			str_ip=str(ip_begin)+'~'+str(ip_end)
-			#print str_ip
-			ip_begin_num,ip_end_num=ip_to_number(ip_begin,ip_end)
-			ip_range_str=str(ip_begin_num)+str(ip_end_num)
-			hash=md5(ip_range_str)#skip the same ip range
-			if hash_dic.has_key(hash):
-				#print line
-				dic[str_ip]=dic[str_ip]+1
-				repeat=repeat+1
-				#break
-			else:
-				print "**********************\n\n"
-				print use_content
-				use=use+1
-				hash_dic[hash]=1
-				dic[str_ip]=1
-			#whois_insert(ip_begin_num,ip_end_num,use_content,hash)
+		r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9]))) {0,1}- {0,1}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))',
+		r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
+		r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){2}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
+		r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){1}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])'
+		]
+		flag=0
+		for ip_range_reg in ip_range_regs:
+			ip_range=re.findall(ip_range_reg,use_content)
+			if ip_range!=[]:
+				flag=1
+				if ip_range_regs.index(ip_range_reg)>0:
+					print ip_range
+					ip_begin,ip_end=ip_n_to_ip(ip_range[0])
+				else:
+					ip_begin=ip_range[0][0]
+					ip_end=ip_range[0][1]
+				str_ip=str(ip_begin)+'~'+str(ip_end)
+				#print str_ip
+				ip_begin_num,ip_end_num=ip_to_number(ip_begin,ip_end)
+				ip_range_str=str(ip_begin_num)+str(ip_end_num)
+				hash=md5(ip_range_str)#skip the same ip range
+				if hash_dic.has_key(hash):
+					#print line
+					#dic[str_ip]=dic[str_ip]+1
+					repeat=repeat+1
+					break
+				else:
+					#print "**********************\n\n"
+					#print use_content
+					use=use+1
+					hash_dic[hash]=1
+					#dic[str_ip]=1
+					#whois_insert(ip_begin_num,ip_end_num,use_content,hash)
+					break
+		if flag==0:
+			test_fp.write(use_content)
+			test_fp.write('\n**************************\n')
 		#break
-
+test_fp.close()
 print "repeat:"+str(repeat)
 print "insert:"+str(use)
 print "undeal:"+str(undeal)

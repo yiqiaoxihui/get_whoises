@@ -1,0 +1,32 @@
+	all_key=[
+	'NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization','RegDate','Updated','Comment','Ref',
+	'inetnum','aut-num','abuse-c','owner','ownerid','responsible','address',
+	'netname','descr','country','geoloc','language','org','sponsoring-org','admin-c',
+	'phone','owner-c','tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
+	'inetrev','dns',
+	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
+	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date'
+	'created','last-modified','changed','source','parent'
+	]
+
+	RIPE=['inetnum','netname','descr','country','geoloc','language','org','sponsoring-org','admin-c','tech-c','status',
+	'remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt','created','last-modified','source']
+
+	APNIC=['inetnum','netname','descr','country','geoloc','language','admin-c','tech-c','status',
+	'remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-irt','changed','source']
+
+	ARIN=['NetRange','CIDR','NetName','NetHandle','Parent','NetType','OriginAS','Organization','RegDate','Updated','Comment','Ref']
+
+	LACNIC=['inetnum','aut-num','abuse-c','owner','ownerid','responsible','address','country',
+	'phone','owner-c','tech-c','status','inetrev','nserver','nsstat','nslastaa','created','changed']
+
+	AFRINIC=['inetnum','netname','descr','country','org','admin-c','tech-c','status','remarks','notify',
+	'mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt','source','parent']
+
+	JPNIC=['Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update']
+
+	KRNIC=['IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date']
+
+	dns_list=['nserver','nsstat','nslastaa']
+	array_key=['descr','remarks','Comment','mnt-by','mnt-lower','mnt-routes','mnt-domains','changed','dns']
+	org_list=['org','Organization','Organization Name']
