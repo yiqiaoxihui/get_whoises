@@ -81,11 +81,11 @@ class SimpleTopo(Topo):
             node_struct=re.findall(reg_node,node)[0]
             if node_struct!=[]:
                 node_dic={}
-                if node_struct[0]=='BGP'||node_struct[0]=='OSPF':
+                if node_struct[0]=='BGP' or node_struct[0]=='OSPF':
                     node_dic['name']='r'+str(router_index)
                     node_dic['router-id']=socket.inet_ntoa(struct.pack('I',socket.htonl(router_index)))
                     node_dic['type']=node_struct[0]
-                    node_dic['eth_n']=node_struct[1].split()
+                    node_dic['eth_n']=node_struct[1].split('|')
                     node_dic['asn']=node_struct[2]
                     router_index=router_index+1
                     if router_index>=8589934592:
@@ -93,7 +93,7 @@ class SimpleTopo(Topo):
                 elif node_struct[0]=='HOST':
                     node_dic['name']='h'+str(host_id)
                     node_dic['type']='HOST'
-                    node_dic['eth_n']=node_struct[1].split()
+                    node_dic['eth_n']=node_struct[1].split('|')
                     node_dic['asn']=node_struct[2]
                 else:
                     pass
@@ -102,11 +102,11 @@ class SimpleTopo(Topo):
         router_bgp_dic={}
         router_ospf_dic={}
         router_zebra_dic={}
-        current_host{}
+        current_host={}
         switch_index=1
         #just init router interface info
         for node in node_list:
-            if node['type']=="BGP" or node['type']=="OSPF"
+            if node['type']=="BGP" or node['type']=="OSPF":
                 router_name=node['name']
                 self.addSwitch(router_name)
                 router_zebra_dic[router_name]={}
@@ -141,7 +141,7 @@ class SimpleTopo(Topo):
                         neighbor_ip=ethi_link_ip_list[0]
                         for nb_node in node_list:
                             if neighbor_ip in nb_node['eth_n']:
-                                #链接不能是某台主机的网关
+                                #link to must not be host's gw
                                 if nb_node['type']=='HOST' and nb_node['eth_n'][1]==neighbor_ip:
                                     continue
                                 neighbor_node=nb_node
@@ -193,7 +193,7 @@ class SimpleTopo(Topo):
                                 #create ospf.conf for bgp router
                                 if router_ospf_dic.has_key(router_name)==False:
                                     router_ospf_dic[router_name]={}
-                                    router_ospf_dic[router_name]['router-id']=router_name['router-id']
+                                    router_ospf_dic[router_name]['router-id']=node_struct['router-id']
                                     router_ospf_dic[router_name]['network']=[]
                                     router_ospf_dic[router_name]['redistribute']=[]
                                     router_ospf_dic[router_name]['log file']='/tmp/'+router_name+'-ospfdd.log'
@@ -222,15 +222,18 @@ class SimpleTopo(Topo):
                             else:
                                 print "in ospf router to conf file never happen!"
                         else:
-                            print router_name+"can not find its neighbor"
+                            print router_name+" :can not find its neighbor"
+                    elif len(ethi_link_ip_list)>2:
+                        print router_name+' :can bgp routers be linked with L2 switch?'
+                    elif len(ethi_link_ip_list)==0:
+                        print router_name+':bgp can not find link,maybe all be added before'
                     else:
-                        print 'can bgp routers be linked with L2 switch?'
-                        continue
+                        pass
             elif node_struct['type']=="OSPF":
                 router_name=node_struct['name']
                 if router_ospf_dic.has_key(router_name)==False:
                     router_ospf_dic[router_name]={}
-                    router_ospf_dic[router_name]['router-id']=router_name['router-id']
+                    router_ospf_dic[router_name]['router-id']=node_struct['router-id']
                     router_ospf_dic[router_name]['network']=[]
                     router_ospf_dic[router_name]['redistribute']=[]
                     router_ospf_dic[router_name]['log file']='/tmp/'+router_name+'-ospfdd.log'
@@ -324,6 +327,7 @@ class SimpleTopo(Topo):
                                 print "in ospf router to conf file never happen!"
                     #for ospf routers linked with switch
                     if len(ethi_link_ip_list)>2:
+                        #if the ospf router linked by switch,add this interface to network?
                         dic={}
                         dic['ip']=ethi
                         dic['area']=0   #TODO
@@ -360,6 +364,7 @@ class SimpleTopo(Topo):
                                         router_ospf_dic[linke_to_switch_node_name]['network']=[]
                                         router_ospf_dic[linke_to_switch_node_name]['redistribute']=[]
                                         router_ospf_dic[linke_to_switch_node_name]['log file']='/tmp/'+linke_to_switch_node_name+'-ospfdd.log'
+                                    #ospf router linked by switch,add nework?
                                     dic={}
                                     dic['ip']=link_ip
                                     dic['area']=0   #TODO
@@ -374,6 +379,87 @@ class SimpleTopo(Topo):
                         print 'ospf can not find link,maybe all be added before'
             elif node_struct['type']=="HOST":
                 host_name=node_struct['name']
+                host_ip=node_struct['eth_n'][0]
+                ethi_link_ip_list=[]
+                for link_items in link_list:
+                    if host_ip in link_items:
+                        ethi_link_ip_list=link_items
+                        #important,avoid the left router link repeated
+                        link_list.remove(link_items)
+                        break
+                if len(ethi_link_ip_list)==2:
+                    neighbor_node={}
+                    ethi_link_ip_list.remove(host_ip)#get other ip of two
+                    neighbor_ip=ethi_link_ip_list[0]
+                    for nb_node in node_list:
+                        if neighbor_ip in nb_node['eth_n']:
+                            if nb_node['type']=='HOST' and nb_node['eth_n'][1]==neighbor_ip:
+                                continue
+                            neighbor_node=nb_node
+                            break
+                    if neighbor_node!={}:
+                        neighbor_node_name=neighbor_node['name']
+                        if neighbor_node['type']=="HOST":
+                            print 'can '+host_name+' link to host '+neighbor_node_name+"?"
+                        elif neighbor_node['type']=="OSPF" or neighbor_node['type']=="BGP":
+                            gw='via '+node_struct['eth_n'][1]
+                            self.addHost(host_name,ip=host_ip,gw=gw)
+                            self.addLink(host_name,neighbor_node['name'])
+                            router_zebra_dic[neighbor_node_name]['ethn'].append(neighbor_ip)
+                        else:
+                            print host_name+'neighbor node type unknown'
+                            #continue for next node
+                            continue  
+                elif len(ethi_link_ip_list)>2:
+                    #this host link node by a switch
+                    gw='via '+node_struct['eth_n'][1]
+                    self.addHost(host_name,ip=host_ip,gw=gw)
+                    switch_name='s'+str(switch_index)
+                    switch_index=switch_index+1
+                    self.addSwitch(switch_name,cls=OVSKernelSwitch)
+                    self.addLink(host_name,switch_name)
+                    ethi_link_ip_list.remove(host_ip)
+                    for link_ip in ethi_link_ip_list:
+                        linke_to_switch_node={}
+                        #TODO:maybe not need loop from begin
+                        for nb_node in node_list:
+                            if link_ip in nb_node['eth_n']:
+                                if nb_node['type']=='HOST' and nb_node['eth_n'][1]==link_ip:
+                                    continue
+                                linke_to_switch_node=nb_node
+                                break
+                        if linke_to_switch_node!={}:
+                            linke_to_switch_node_name=linke_to_switch_node['name']
+                            if linke_to_switch_node['type']=="HOST":
+                                gw='via '+linke_to_switch_node['eth_n'][1]
+                                self.addHost(linke_to_switch_node_name,ip=host_ip,gw=gw)
+                                self.addLink(switch_name,linke_to_switch_node_name)
+                            elif linke_to_switch_node['type']=="OSPF":
+                                self.addLink(switch_name,linke_to_switch_node_name)
+                                router_zebra_dic[linke_to_switch_node_name]['ethn'].append(link_ip)
+                                if router_ospf_dic.has_key(linke_to_switch_node_name)==False:
+                                    router_ospf_dic[linke_to_switch_node_name]={}
+                                    router_ospf_dic[linke_to_switch_node_name]['router-id']=linke_to_switch_node['router-id']
+                                    router_ospf_dic[linke_to_switch_node_name]['network']=[]
+                                    router_ospf_dic[linke_to_switch_node_name]['redistribute']=[]
+                                    router_ospf_dic[linke_to_switch_node_name]['log file']='/tmp/'+linke_to_switch_node_name+'-ospfdd.log'
+                                #ospf router linked by switch,add nework?
+                                dic={}
+                                dic['ip']=link_ip
+                                dic['area']=0   #TODO
+                                router_ospf_dic[linke_to_switch_node_name]['network'].append(dic)   
+                            elif linke_to_switch_node['type']=="BGP":
+                                print host_name+" :can BGP link to ospf with a L2 switch?"
+                                # self.addLink(switch_name,linke_to_switch_node_name)
+                                # router_zebra_dic[linke_to_switch_node_name]['ethn'].append(link_ip)
+                            else:
+                                print host_name+' :neighbor node type unknown'
+                elif len(ethi_link_ip_list)==0:
+                    print host_name+' :can not find link,maybe be linked by before'
+                else:
+                    pass
+            else:
+                print node_name+' :unknow this node type'
 
         # router=self.addSwitch('r1',cls=OVSKernelSwitch,inNamespace=False)
         # routers.append(router)
