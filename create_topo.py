@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 from mininet.topo import Topo
 from mininet.net import Mininet
 from mininet.log import lg, info, setLogLevel
@@ -92,6 +92,7 @@ class SimpleTopo(Topo):
                         break
                 elif node_struct[0]=='HOST':
                     node_dic['name']='h'+str(host_id)
+                    host_id=host_id+1
                     node_dic['type']='HOST'
                     node_dic['eth_n']=node_struct[1].split('|')
                     node_dic['asn']=node_struct[2]
@@ -112,7 +113,7 @@ class SimpleTopo(Topo):
                 router_zebra_dic[router_name]={}
                 router_zebra_dic[router_name]['ethn']=[]
                 router_zebra_dic[router_name]['log file']='/tmp/'+router_name+'.log'
-                router_zebra_dic[router_name]['filename']='topo/zebra/'+router_name+'.conf'
+                router_zebra_dic[router_name]['filename']='topo/zebra/zebra-'+router_name+'.conf'
 
         for node_struct in node_list:
             node_name=node_struct['name']
@@ -153,7 +154,8 @@ class SimpleTopo(Topo):
                             if neighbor_node['type']=="HOST":
                                 #gw='via '+re.findall(r'(.*)/.*',ethi)[0]
                                 gw='via '+neighbor_node['eth_n'][1]
-                                self.addHost(neighbor_node['name'],ip=neighbor_node['eth_n'][0],gw=gw)
+                                #print gw
+                                self.addHost(neighbor_node['name'],ip=neighbor_node['eth_n'][0],defaultRoute=gw)
                                 self.addLink(router_name,neighbor_node['name'])
                                 router_zebra_dic[router_name]['ethn'].append(ethi)
                             elif neighbor_node['type']=="OSPF" or neighbor_node['type']=="BGP":
@@ -178,14 +180,14 @@ class SimpleTopo(Topo):
                                 dic={}
                                 ip=re.findall(r'(.*)/.*',neighbor_ip)
                                 if ip!=[]:
-                                    dic['ip']=ip
+                                    dic['ip']=ip[0]
                                 dic['remote-as']=neighbor_node['asn']
                                 dic['timers']='5 5'
                                 router_bgp_dic[router_name]['neighbor'].append(dic)
                                 dic={}
                                 ip=re.findall(r'(.*)/.*',ethi)
                                 if ip!=[]:
-                                    dic['ip']=ip
+                                    dic['ip']=ip[0]
                                 dic['remote-as']=node_struct['asn']
                                 dic['timers']='5 5'                          
                                 router_bgp_dic[neighbor_node_name]['neighbor'].append(dic)
@@ -197,6 +199,7 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[router_name]['network']=[]
                                     router_ospf_dic[router_name]['redistribute']=[]
                                     router_ospf_dic[router_name]['log file']='/tmp/'+router_name+'-ospfdd.log'
+                                    router_ospf_dic[router_name]['filename']='topo/ospf/ospfd-'+router_name+'.conf'
                                 #create ospf conf for neighbor ospf router
                                 if router_ospf_dic.has_key(neighbor_node_name)==False:
                                     router_ospf_dic[neighbor_node_name]={}
@@ -204,6 +207,7 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[neighbor_node_name]['network']=[]
                                     router_ospf_dic[neighbor_node_name]['redistribute']=[]
                                     router_ospf_dic[neighbor_node_name]['log file']='/tmp/'+neighbor_node_name+'-ospfdd.log'
+                                    router_ospf_dic[neighbor_node_name]['filename']='topo/ospf/ospfd-'+neighbor_node_name+'.conf'
                                  #bgp router link ospf router ,so redistribute ospf,etc.
                                 if 'ospf' not in router_bgp_dic[router_name]['redistribute']:
                                     router_bgp_dic[router_name]['redistribute'].append('ospf')
@@ -211,11 +215,11 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[router_name]['redistribute'].append('bgp')
                                 dic={}
                                 dic['ip']=ethi
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[router_name]['network'].append(dic)
                                 dic={}
                                 dic['ip']=neighbor_ip
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[neighbor_node_name]['network'].append(dic)
                             elif neighbor_node['type']=="HOST":
                                 pass
@@ -237,6 +241,7 @@ class SimpleTopo(Topo):
                     router_ospf_dic[router_name]['network']=[]
                     router_ospf_dic[router_name]['redistribute']=[]
                     router_ospf_dic[router_name]['log file']='/tmp/'+router_name+'-ospfdd.log'
+                    router_ospf_dic[router_name]['filename']='topo/ospf/ospfd-'+router_name+'.conf'
                 for ethi in node_struct['eth_n']:
                     ethi_link_ip_list=[]
                     for link_items in link_list:
@@ -262,7 +267,8 @@ class SimpleTopo(Topo):
                             if neighbor_node['type']=="HOST":
                                 #gw='via '+re.findall(r'(.*)/.*',ethi)[0]
                                 gw='via '+neighbor_node['eth_n'][1]
-                                self.addHost(neighbor_node['name'],ip=neighbor_node['eth_n'][0],gw=gw)
+                                #print gw
+                                self.addHost(neighbor_node['name'],ip=neighbor_node['eth_n'][0],defaultRoute=gw)
                                 self.addLink(router_name,neighbor_node['name'])
                                 router_zebra_dic[router_name]['ethn'].append(ethi)
                             elif neighbor_node['type']=="OSPF" or neighbor_node['type']=="BGP":
@@ -280,13 +286,14 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[neighbor_node_name]['network']=[]
                                     router_ospf_dic[neighbor_node_name]['redistribute']=[]
                                     router_ospf_dic[neighbor_node_name]['log file']='/tmp/'+neighbor_node_name+'-ospfdd.log'
+                                    router_ospf_dic[neighbor_node_name]['filename']='topo/ospf/ospfd-'+neighbor_node_name+'.conf'
                                 dic={}
                                 dic['ip']=ethi
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[router_name]['network'].append(dic)
                                 dic={}
                                 dic['ip']=neighbor_ip
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[neighbor_node_name]['network'].append(dic)
                             elif neighbor_node['type']=="BGP":
                                 if router_ospf_dic.has_key(neighbor_node_name)==False:
@@ -295,6 +302,7 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[neighbor_node_name]['network']=[]
                                     router_ospf_dic[neighbor_node_name]['redistribute']=[]
                                     router_ospf_dic[neighbor_node_name]['log file']='/tmp/'+neighbor_node_name+'-ospfdd.log'
+                                    router_ospf_dic[neighbor_node_name]['filename']='topo/ospf/ospfd-'+neighbor_node_name+'.conf'
                                 if router_bgp_dic.has_key(neighbor_node_name)==False:
                                     router_bgp_dic[neighbor_node_name]={}
                                     router_bgp_dic[neighbor_node_name]['router-id']=neighbor_node['router-id']
@@ -310,11 +318,11 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[neighbor_node_name]['redistribute'].append('bgp')
                                 dic={}
                                 dic['ip']=ethi
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[router_name]['network'].append(dic)
                                 dic={}
                                 dic['ip']=neighbor_ip
-                                dic['area']=0   #TODO
+                                dic['area']='0'   #TODO
                                 router_ospf_dic[neighbor_node_name]['network'].append(dic)
                             elif neighbor_node['type']=="HOST":
                                 #if ospf router link to host,not add network to ospf conf
@@ -330,7 +338,7 @@ class SimpleTopo(Topo):
                         #if the ospf router linked by switch,add this interface to network?
                         dic={}
                         dic['ip']=ethi
-                        dic['area']=0   #TODO
+                        dic['area']='0'   #TODO
                         router_ospf_dic[router_name]['network'].append(dic)
                         ethi_link_ip_list.remove(ethi)
                         switch_name='s'+str(switch_index)
@@ -353,7 +361,7 @@ class SimpleTopo(Topo):
                                     #gw='via '+re.findall(r'(.*)/.*',ethi)[0]
                                     #if host link to more than one router by switch ,must tell gw
                                     gw='via '+linke_to_switch_node['eth_n'][1]
-                                    self.addHost(linke_to_switch_node['name'],ip=link_ip,gw=gw)
+                                    self.addHost(linke_to_switch_node['name'],ip=link_ip,defaultRoute=gw)
                                     self.addLink(switch_name,linke_to_switch_node_name)
                                 elif linke_to_switch_node['type']=="OSPF":
                                     self.addLink(switch_name,linke_to_switch_node_name)
@@ -364,10 +372,11 @@ class SimpleTopo(Topo):
                                         router_ospf_dic[linke_to_switch_node_name]['network']=[]
                                         router_ospf_dic[linke_to_switch_node_name]['redistribute']=[]
                                         router_ospf_dic[linke_to_switch_node_name]['log file']='/tmp/'+linke_to_switch_node_name+'-ospfdd.log'
+                                        router_ospf_dic[linke_to_switch_node_name]['filename']='topo/ospf/ospfd-'+linke_to_switch_node_name+'.conf'
                                     #ospf router linked by switch,add nework?
                                     dic={}
                                     dic['ip']=link_ip
-                                    dic['area']=0   #TODO
+                                    dic['area']='0'   #TODO
                                     router_ospf_dic[linke_to_switch_node_name]['network'].append(dic)
                                 elif linke_to_switch_node['type']=="BGP":
                                     print "can BGP link to ospf with a L2 switch?"
@@ -403,7 +412,7 @@ class SimpleTopo(Topo):
                             print 'can '+host_name+' link to host '+neighbor_node_name+"?"
                         elif neighbor_node['type']=="OSPF" or neighbor_node['type']=="BGP":
                             gw='via '+node_struct['eth_n'][1]
-                            self.addHost(host_name,ip=host_ip,gw=gw)
+                            self.addHost(host_name,ip=host_ip,defaultRoute=gw)
                             self.addLink(host_name,neighbor_node['name'])
                             router_zebra_dic[neighbor_node_name]['ethn'].append(neighbor_ip)
                         else:
@@ -413,7 +422,7 @@ class SimpleTopo(Topo):
                 elif len(ethi_link_ip_list)>2:
                     #this host link node by a switch
                     gw='via '+node_struct['eth_n'][1]
-                    self.addHost(host_name,ip=host_ip,gw=gw)
+                    self.addHost(host_name,ip=host_ip,defaultRoute=gw)
                     switch_name='s'+str(switch_index)
                     switch_index=switch_index+1
                     self.addSwitch(switch_name,cls=OVSKernelSwitch)
@@ -432,7 +441,7 @@ class SimpleTopo(Topo):
                             linke_to_switch_node_name=linke_to_switch_node['name']
                             if linke_to_switch_node['type']=="HOST":
                                 gw='via '+linke_to_switch_node['eth_n'][1]
-                                self.addHost(linke_to_switch_node_name,ip=host_ip,gw=gw)
+                                self.addHost(linke_to_switch_node_name,ip=host_ip,defaultRoute=gw)
                                 self.addLink(switch_name,linke_to_switch_node_name)
                             elif linke_to_switch_node['type']=="OSPF":
                                 self.addLink(switch_name,linke_to_switch_node_name)
@@ -443,11 +452,12 @@ class SimpleTopo(Topo):
                                     router_ospf_dic[linke_to_switch_node_name]['network']=[]
                                     router_ospf_dic[linke_to_switch_node_name]['redistribute']=[]
                                     router_ospf_dic[linke_to_switch_node_name]['log file']='/tmp/'+linke_to_switch_node_name+'-ospfdd.log'
+                                    router_ospf_dic[linke_to_switch_node_name]['filename']='topo/ospf/ospfd-'+linke_to_switch_node_name+'.conf'
                                 #ospf router linked by switch,add nework?
                                 dic={}
                                 dic['ip']=link_ip
-                                dic['area']=0   #TODO
-                                router_ospf_dic[linke_to_switch_node_name]['network'].append(dic)   
+                                dic['area']='0'   #TODO
+                                router_ospf_dic[linke_to_switch_node_name]['network'].append(dic)
                             elif linke_to_switch_node['type']=="BGP":
                                 print host_name+" :can BGP link to ospf with a L2 switch?"
                                 # self.addLink(switch_name,linke_to_switch_node_name)
@@ -460,54 +470,106 @@ class SimpleTopo(Topo):
                     pass
             else:
                 print node_name+' :unknow this node type'
-
-        # router=self.addSwitch('r1',cls=OVSKernelSwitch,inNamespace=False)
-        # routers.append(router)
-
-        # router21=self.addSwitch('r010_21')
-        # routers.append(router21)
-        # self.addLink('r1','r010_21')  
-
-        # router22=self.addSwitch('r010_22')
-        # routers.append(router22)
-        # self.addLink('r1','r010_22') 
-
-
-        # host21 = self.addHost('h010_21',ip='10.4.8.2/24',defaultRoute='via 10.4.8.1')
-        # hosts.append(host21)
-        # host22 = self.addHost('h010_22',ip='10.4.9.2/24',defaultRoute='via 10.4.9.1')
-        # hosts.append(host22)
-        # self.addLink('r010_21','h010_21')
-        # self.addLink('r010_22','h010_22')
-
-        # host1 = self.addHost('h1')
-        # #hosts.append(host1)
-        # self.addLink('r1',host1)
-        # host2 = self.addHost('h2')
-        # #hosts.append(host2)
-        # self.addLink('r1',host2)
-        # host3=self.addHost('h3',ip='10.255.0.2/28',defaultRoute='via 10.255.0.18')
-        # self.addLink('r1','h3')
-
-
+        #create conf file
+        for k in router_bgp_dic:
+            f=open(router_bgp_dic[k]['filename'],'w')
+            f.write('hostname %s\n' % k)
+            f.write('password en\nenable password en\n\n')
+            f.write('router bgp %s\n' % router_bgp_dic[k]['asn'])
+            f.write('  bgp router-id %s\n' % router_bgp_dic[k]['router-id'])
+            f.write('  redistribute connected\n')
+            for redistribute in router_bgp_dic[k]['redistribute']:
+                f.write('  redistribute %s\n' % redistribute)
+            for nb in router_bgp_dic[k]['neighbor']:
+                f.write('  neighbor %s remote-as %s\n' % (nb['ip'],nb['remote-as']))
+                f.write('  neighbor %s timers %s\n' % (nb['ip'],nb['timers']))
+            f.write('log file %s\n\n' % router_bgp_dic[k]['log file'])
+            f.write('log stdout')
+            f.close()
+        for k in router_ospf_dic:
+            f=open(router_ospf_dic[k]['filename'],'w')
+            f.write('hostname %s\n' % k)
+            f.write('password en\n\n')
+            f.write('router ospf\n')
+            f.write('  ospf router-id %s\n' % router_ospf_dic[k]['router-id'])  
+            f.write('  redistribute connected\n')
+            for redistribute in router_ospf_dic[k]['redistribute']:
+                f.write('  redistribute %s\n' % redistribute)
+            for network in router_ospf_dic[k]['network']:
+                f.write('  network %s area %s\n' % (network['ip'], network['area']))
+            f.write('log file %s\n\n' % router_ospf_dic[k]['log file'])
+            f.write('log stdout')
+            f.close()
+        for k in router_zebra_dic:
+            f=open(router_zebra_dic[k]['filename'],'w')
+            f.write('hostname %s\n' % k)
+            f.write('password en\n\n')
+            f.write('interface lo\n  ip address 127.0.0.1/8\n')
+            i=1
+            for ethn in router_zebra_dic[k]['ethn']:
+                f.write('interface %s-eth%d\n' % (k,i))
+                f.write('  ip address %s\n\n' % ethn)
+                i=i+1
+            f.write('log file %s' % router_zebra_dic[k]['log file'])
+            f.close()
         return
 # Start the routing daemons
 # When a I2RS daemon is ready add it to the routers you want it to run, probably run:
 # router.cmd("/usr/lib/quagga/i2rsd -f conf/i2rsd-%s.conf -d -i /tmp/i2rsd-%s.pid > logs/%s-i2rsd-stdout 2>&1" % (router.name, router.name, router.name))
 # router.waitOutput()
+def IsSubString(SubStrList,Str): 
+ ''''' 
+ #判断字符串Str是否包含序列SubStrList中的每一个子字符串 
+ #>>>SubStrList=['F','EMS','txt'] 
+ #>>>Str='F06925EMS91.txt' 
+ #>>>IsSubString(SubStrList,Str)#return True (or False) 
+ '''
+ flag=True
+ for substr in SubStrList: 
+  if not(substr in Str): 
+   flag=False
+ return flag 
+#~ #---------------------------------------------------------------------- 
+def GetFileList(FindPath,FlagStr=[]): 
+ ''''' 
+ #获取目录中指定的文件名 
+ #>>>FlagStr=['F','EMS','txt'] #要求文件名称中包含这些字符 
+ #>>>FileList=GetFileList(FindPath,FlagStr) # 
+ '''
+ import os 
+ FileList=[] 
+ FileNames=os.listdir(FindPath) 
+ if (len(FileNames)>0): 
+  for fn in FileNames: 
+   if (len(FlagStr)>0): 
+    #返回指定类型的文件名 
+    if (IsSubString(FlagStr,fn)): 
+     fullfilename=os.path.join(FindPath,fn) 
+     FileList.append(fullfilename) 
+   else: 
+    #默认直接返回所有文件名 
+    fullfilename=os.path.join(FindPath,fn) 
+    FileList.append(fullfilename) 
+ #对文件名排序 
+ if (len(FileList)>0): 
+  FileList.sort() 
+ return FileList
+
 def startRouting(router):
-    if router.name=='r010_2m':
-        return
-    flag=-1
-    flag=router.name.find('r010_')
-    if flag!=-1:
-        router.cmd("/usr/lib/quagga/zebra -f test/zebra/zebra-%s.conf -d -i /tmp/zebra-%s.pid > logs/%s-zebra-stdout 2>&1" % (router.name, router.name, router.name))
+    if GetFileList('./topo/zebra',FlagStr=[router.name])!=[]: 
+        router.cmd("/usr/lib/quagga/zebra -f topo/zebra/zebra-%s.conf -d -i /tmp/zebra-%s.pid > logs/%s-zebra-stdout 2>&1" % (router.name, router.name, router.name))
         router.waitOutput()
-        router.cmd("/usr/lib/quagga/ospfd -f test/ospf/ospfd-%s.conf -d -i /tmp/ospfd-%s.pid > logs/%s-ospfd-stdout 2>&1" % (router.name, router.name, router.name), shell=True)
-        router.waitOutput()
-        log("Starting zebra and ospfd on %s" % router.name)
+        print router.name+' configure zebra...'
     else:
         log("WARNING: No routing deamon configured for %s." % (router.name))
+    if GetFileList('./topo/ospf',FlagStr=[router.name])!=[]:
+        print router.name+' configure ospf...'
+        router.cmd("/usr/lib/quagga/ospfd -f topo/ospf/ospfd-%s.conf -d -i /tmp/ospfd-%s.pid > logs/%s-ospfd-stdout 2>&1" % (router.name, router.name, router.name), shell=True)
+        router.waitOutput()
+    if GetFileList('./topo/bgp',FlagStr=[router.name])!=[]:
+        router.cmd("/usr/lib/quagga/bgpd -f topo/bgp/bgpd-%s.conf -d -i /tmp/bgpd-%s.pid > logs/%s-bgpd-stdout 2>&1" % (router.name, router.name, router.name), shell=True)
+        router.waitOutput()
+        print router.name+' configure bgp...'
     return
 
 def main():
@@ -516,30 +578,19 @@ def main():
     os.system("killall -9 zebra bgpd ospfd > /dev/null 2>&1")
 
     net = Mininet(topo=SimpleTopo(), switch=Router,link=TCLink)
-    # net.__init__()
-    # r1=net.addSwitch('r1',failMode='standalone')
-    # h1=net.addHost('h1', cls=Host, ip='10.0.0.4', defaultRoute=None)
-    # h2=net.addHost('h4', cls=Host, ip='10.0.0.1', defaultRoute=None)
-    # net.addLink(r1,h1) 
-    # net.addLink(r1,h2)
     net.start()
-    # for controller in net.controllers:
-    #     controller.start()
-    #net.get('r1').start([])
-    #net.start()
+    for router in net.switches:
+        #print "*********"+router.name
+        router.cmd("sysctl -w net.ipv4.ip_forward=1")
+        router.waitOutput()
 
-    # for router in net.switches:
-    #     print "*********"+router.name
-    #     router.cmd("sysctl -w net.ipv4.ip_forward=1")
-    #     router.waitOutput()
-
-    # log("Waiting %d seconds for sysctl changes to take effect..."
-    #     % args.sleep)
-    # sleep(args.sleep)
+    log("Waiting %d seconds for sysctl changes to take effect..."
+        % args.sleep)
+    sleep(args.sleep)
 
     # # initialize routing daemons
-    # for router in net.switches:
-    #     startRouting(router)
+    for router in net.switches:
+        startRouting(router)
 
 #     # set hosts IP and gateways
     # for host in net.hosts:
