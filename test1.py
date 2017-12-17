@@ -1,20 +1,12 @@
 import socket
 import struct
-f=open('../liuyang','w')
-f.write('sdf%s' % '123')
-f.write('asd')
+f=open('/data/all_ip_80w','r')
+ip_list=f.readlines()
 f.close()
-number=(10<<24)+(255<<2)+2
-str1='r010_123'
-print "aaaaaa"+str(str1.find('dr010_'))
-#print socket.inet_ntoa(struct.pack('!L', number))
-def test():
-	global a
-	a=1
-
-	def in_test():
-		global a
-		a=a+1
-	in_test()
-	print a
-test()
+print len(ip_list)
+ff=open('/data/test1','w')
+for item in ip_list:
+	ff.write(item)
+ff.close()
+f1=open('/data/all_ip_80w','w')
+f1.close()

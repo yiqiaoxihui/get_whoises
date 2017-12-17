@@ -3,6 +3,7 @@
 Created on Thu sep 24 17:42:49 2017
 
 @author: ly
+@descrp:this file run linux whois command to get whois data by the given the ip list of file
 """
 import os
 import re
@@ -44,6 +45,9 @@ def ip_n_to_ip_list(ipn):
 	ip_num=re.findall(r"(.+)\/(\d{1,2})",ipn)
 	if len(ip_num)<=0:
 		list.append(ipn)
+		return list
+	#don't deal ipv6
+	if ipn.find(":")>=0:
 		return list
 	#print ip_num[0][0]
 	i=ip_num[0][0].count('.')
@@ -97,12 +101,25 @@ def ip_n_list_to_ip_list(ipn_list):
 			#print ip
 			l.append(ip)
 	return l
+'''
+Number of queries from an IP address – Unlimited [1]
+xNumber of queries passed by a proxy – Unlimited [1]
+xNumber of personal data sets returned in queries from an IP address –
+1,000 per 24 hours [3]
+xNumber of personal data sets returned in queries from a proxy IP
+address – 20,000 per 24 hours [3] 
+#inetnum:118.208.0.0 - 118.211.255.255 very frequence
+'''
 def whois_query(thread_name):
 	global break_thread_signal,wr_fp,wl_fp,ip_list,write_left_ip_lock,write_result_lock
 	key_str="Found a referral to "
 	limit_recode=0
 	last_limit_flag=0
+	query_limits_count=1000
+
 	while(len(ip_list)>0):
+		if break_thread_signal==1:
+			break
 		ipn_list=fetch_from_queue(thread_name)
 		thread_ip_list=ip_n_list_to_ip_list(ipn_list)
 		count=0
@@ -118,11 +135,10 @@ def whois_query(thread_name):
 						write_left_ip_lock.release()
 				#the break must in this place,or will lost some ip
 				break
-
 			print thread_name+'current:'+thread_ip_list[i]
 			arg = 'whois '+thread_ip_list[i];
 			query_result=os.popen(arg)
-						data=""
+			data=""
 			for line in query_result:
 				if (line[0]=='%' or line[0]=='#'):    	#delete unnecessary info
 					continue
@@ -135,24 +151,26 @@ def whois_query(thread_name):
 			if len(data)==0 or data=="Query rate limit exceeded":
 				print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 				#count=count+1
-				if last_limit_flag==0:
-					last_limit_flag=1
-					#limit_recode=0
-				elif last_limit_flag==1:
-					limit_recode=limit_recode+1
-					if limit_recode==100:
-						print thread_name+' sleep for 100s'
-						sleep(limit_recode)
-					elif  limit_recode>100:
-						limit_recode=limit_recode*2
-						print thread_name+' sleep:'+str(limit_recode)+'s'
-						sleep(limit_recode)
+				#for query limite set sleep time
+				# if last_limit_flag==0:
+				# 	last_limit_flag=1
+				# 	#limit_recode=0
+				# elif last_limit_flag==1:
+				# 	limit_recode=limit_recode+1
+				# 	if limit_recode==100:
+				# 		print thread_name+' sleep for 100s'
+				# 		sleep(limit_recode)
+				# 	elif  limit_recode>100:
+				# 		limit_recode=limit_recode*2
+				# 		print thread_name+' sleep:'+str(limit_recode)+'s'
+				# 		sleep(limit_recode)
 				ip_push_into_queue(thread_ip_list[i])
 				continue
 			#deal both have ' and " in data
-			last_limit_flag=0
-			if limit_recode>0:
-				limit_recode=limit_recode/2
+			#for query limite set sleep time
+			# last_limit_flag=0
+			# if limit_recode>0:
+			# 	limit_recode=limit_recode/2
 			if '"' in data:
 				data=data.replace('"','\\"')
 			data='{"content":"'+data+'","ip":"'+thread_ip_list[i]+'"}'
@@ -161,6 +179,11 @@ def whois_query(thread_name):
 				wr_fp.write('\n')
 				#wr_fp.flush()
 				write_result_lock.release()
+			query_limits_count=query_limits_count-1
+			#for query limit for everyday
+			if query_limits_count<=0:
+				query_limits_count=1000
+				sleep(86400)
 	print thread_name+" query completed!"
 
 def break_keep():
@@ -184,37 +207,43 @@ def break_keep():
 			break
 		if break_thread_signal==2:
 			break
+#recover mode
+#result file path:./query_whois_raw_dir/whois_query_result
+#left ip file path:./query_whois_raw_dir/left_ip
+#default all ip:./query_whois_raw_dir/all_ip
+
 def recover():
 	global ip_list,wr_fp,wl_fp
 	recover_flag="n"
+	result_path="./query_whois_raw_dir/whois_query_result"
+	ip_left_path="./query_whois_raw_dir/left_ip"
 	recover_flag=raw_input("do you want recover?(y/n,default n):")
+	if os.path.exists("query_whois_raw_dir")==False:
+		os.makedirs("query_whois_raw_dir")
+		print "can not find query_whois_raw_dir dir,first run!"
+		recover_flag=''
 	if recover_flag=='':
 		recover_flag='n'
 	if recover_flag=='y':
 		ip_in_row=0
-		ip_left_path=raw_input("please input the left ip path(recover mode):")
-		result_path=raw_input("please input the path to keep result(recover mode):")
+		#ip_left_path=raw_input("please input the left ip path(recover mode):")
+		#result_path=raw_input("please input the path to keep result(recover mode):")
 		ip_fp=open(ip_left_path,'r')
 		ip_list=ip_fp.readlines()
 		ip_fp.close()
 	else:
 		ip_path=raw_input("please input ip file path:")
-		ip_in_row=raw_input("please input the row of ip of the file(0~N):")
-		result_path=raw_input("please input result path:")
-		ip_left_path=raw_input("please input ip left path:")
+		#the ip file content like: ip    as    ...
+		ip_in_row=raw_input("please input the row of ip in the file(0~N):")
+		# result_path=raw_input("please input result path:")
+		# ip_left_path=raw_input("please input ip left path:")
 		#recover_path=raw_input("please input ip recover path:")
 		if ip_path=='':
-			ip_path='/data/8724_left_limit_ip'
-		if ip_left_path=='':
-			ip_left_path='/data/left_ip'
-		if result_path=='':
-			result_path="/data/query_result"
-		# ip_left_path='/data/left_90_35w'
+			ip_path='./all_ip'
 		if ip_in_row=='':
 			ip_in_row=0
 		else:
 			ip_in_row=int(ip_in_row)
-		
 		ip_fp=open(ip_path,'r')
 		ip_list=ip_fp.readlines()
 		ip_fp.close()
@@ -229,7 +258,6 @@ def recover():
 	print ip_count
 	wl_fp=open(ip_left_path,'w')
 	wr_fp=open(result_path,'a')
-
 def main():
 	if __name__=='__main__':
 		#break_thread_signal=0

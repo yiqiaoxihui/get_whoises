@@ -4,8 +4,11 @@ import socket
 import struct
 import hashlib
 from pymongo import MongoClient
-
-
+'''
+author:liuyang
+date:2017/12/16 20:15
+desrc:read the raw whois data,extract the beginip,endip and data,insert into mongodb
+'''
 
 def md5(str):
     import hashlib
@@ -51,6 +54,7 @@ def ip_n_to_ip(ip_num):
 		return '0.0.0.0','0.0.0.0'
 #def is_real_ip_range(content,):
 
+#deal the ip which like 1.01.02.03
 def deal_abnormal_ip(ip_begin,ip_end):
 	ip_begin_arr=ip_begin.split('.')
 	ip_end_arr=ip_end.split('.')
@@ -67,6 +71,7 @@ def deal_abnormal_ip(ip_begin,ip_end):
 	return ip_begin,ip_end
 
 def ip_to_number(raw_ip_begin,raw_ip_end):
+	#the ip may be not normal
 	try:
 		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_begin)))[0])
 		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_end)))[0])
@@ -112,12 +117,13 @@ def main():
 	whois_list=[]
 	hash_dic={}
 	dic={}
-	test_fp=open("/data/test2",'w')#/home/ly/Documents/all
+	deal_fail_fp=open("/data/test2",'w')#/home/ly/Documents/all
 	path=raw_input("please input the file path:")
 	if path=='':
-		path='/data/all_1'
+		path='/data/whois_raw'
 	whois_fp=open(path,'r')#/home/ly/Documents/all
 	#read hash for no repeat data
+	#attentation:hash by begin_ip_number+end_ip_number
 	rows=my_mongo.find({},{'hash':1})
 	for row in rows:
 		hash_dic[row['hash']]=1
@@ -145,6 +151,7 @@ def main():
 			if use_content=='':
 				undeal=undeal+1
 				continue
+			#the netrange reg rule:
 			#(\d+.\d+.\d+.\d+) - (\d+.\d+.\d+.\d+)
 			#x.x.x.x/n
 			#x.x.x/n
@@ -183,18 +190,19 @@ def main():
 						break
 				
 			if flag==0:
-				test_fp.write(use_content)
-				test_fp.write('\n**************************\n')
+				#can not find ip range in this whois raw data
+				deal_fail_fp.write(use_content)
+				deal_fail_fp.write('\n**************************\n')
 
 		#break
-	test_fp.close()
+	deal_fail_fp.close()
 	# dic= sorted(dic.items(), key=lambda d:d[1], reverse = True)
 	# repeat1=0
 	# for item in dic:
 	# 	if item[1]>1:
 	# 		repeat1=repeat1+item[1]-1
-	# 	test_fp.write(item[0]+":"+str(item[1])+"\n")
-	# test_fp.close()
+	# 	deal_fail_fp.write(item[0]+":"+str(item[1])+"\n")
+	# deal_fail_fp.close()
 	print "repeat:"+str(repeat)
 	print "insert:"+str(use)
 	print "undeal:"+str(undeal)
