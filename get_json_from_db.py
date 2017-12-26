@@ -80,7 +80,7 @@ def get_useful_info_from_content(ip,content):
 	'phone','owner-c','tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
 	'inetrev','dns',
 	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
-	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date'
+	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date',
 	'created','last-modified','changed','source','parent'
 	]
 

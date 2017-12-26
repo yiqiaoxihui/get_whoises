@@ -25,12 +25,11 @@ def get_ip_range_object(content):
 	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){2}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
 	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){1}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])'
 	]
-	useful_object_list=['inetnum','NetRange','Network Number','IPv4 Address']
+	#useful_object_list=['inetnum','NetRange','Network Number','IPv4 Address']
 	for object_item in object_item_list:
 		for ip_range_reg in ip_range_regs:
 			if re.findall(ip_range_reg,object_item)!=[]:
 				return object_item
-
 
 def get_useful_info_from_content(ip,content):
 	main_content_array_k_v=collections.OrderedDict()
@@ -52,7 +51,7 @@ def get_useful_info_from_content(ip,content):
 	'phone','owner-c','tech-c','status','remarks','notify','mnt-by','mnt-lower','mnt-routes','mnt-domains','mnt-irt',
 	'inetrev','dns',
 	'Network Number','Network Name','Administrative Contact','Technical Contact','Nameserver','Assigned Date','Return Date','Last Update',
-	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date'
+	'IPv4 Address','Organization Name','Network Type','Address','Zip Code','Registration Date',
 	'created','last-modified','changed','source','parent'
 	]
 
