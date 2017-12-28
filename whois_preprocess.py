@@ -82,8 +82,9 @@ def ip_to_number(raw_ip_begin,raw_ip_end):
 	return ip_begin_num,ip_end_num
 def whois_insert(ip_begin,ip_end,content,hash):
 	global my_mongo
-	content=content.decode("unicode_escape")
-	my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+	if my_mongo.find({'hash':hash}).count()<=0:
+		content=content.decode("unicode_escape")
+		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 #some raw whois data maybe include more accurate ip whois info,
 #this function can find the most accurate ip whois info
 def get_accurate_whois_info(raw_content):
@@ -151,6 +152,7 @@ def main():
 			if use_content=='':
 				undeal=undeal+1
 				continue
+
 			#the netrange reg rule:
 			#(\d+.\d+.\d+.\d+) - (\d+.\d+.\d+.\d+)
 			#x.x.x.x/n

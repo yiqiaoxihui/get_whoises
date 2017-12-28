@@ -58,7 +58,7 @@ def get_ip_range_object(content):
 		for ip_range_reg in ip_range_regs:
 			if re.findall(ip_range_reg,object_item)!=[]:
 				return object_item
-
+	return ''
 
 def get_useful_info_from_content(ip,content):
 	main_content_array_k_v=collections.OrderedDict()

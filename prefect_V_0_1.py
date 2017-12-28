@@ -14,17 +14,21 @@ import socket
 import struct
 import hashlib
 import time
+from pymongo import MongoClient
 
 write_result_lock=threading.Lock()
 write_left_ip_lock=threading.Lock()
 ip_list_lock=threading.Lock()
 limit_server_lock=threading.Lock()
+write_db_lock=threading.Lock()
 break_thread_signal=0
 ip_list=[]
+ip_number_hash_dic={}
 wr_fp=0
 wl_fp=0
 fetch_count=5
 ip_assign_list=[]
+#[server,]
 limit_server_list_record={}
 def fetch_from_queue(thread_name):
 	global ip_list,ip_list_lock
@@ -124,6 +128,89 @@ def do_query(ip,server="",port=""):
 	data=data.strip()							#delete whitespace in head or tail
 	data=data.replace("\n","\\n")
 	return data
+#some raw whois data maybe include more accurate ip whois info,
+#this function can find the most accurate ip whois info
+def get_accurate_whois_info(raw_content):
+	useful_object_list=[
+		r'inetnum {0,1}: {0,1}\d{1,3}\.\d{1,3}',
+		r'NetRange {0,1}: {0,1}\d{1,3}\.\d{1,3}',
+		r'Network Number {0,}\] {0,1}\d{1,3}\.\d{1,3}',
+		r'IPv4 Address {0,}: {0,1}\d{1,3}\.\d{1,3}'
+	]
+	use_content=""
+	object_item_list=raw_content.split("\n\n")
+	for object_item in object_item_list:
+		for useful_object in useful_object_list:
+			ip_range=re.findall(useful_object,object_item)
+			if len(ip_range)>0:
+				#print "count:"+str(len(ip_range))+":"+ip_range[0]
+				use_content=raw_content[raw_content.find(object_item):]
+
+	use_content=use_content.strip()
+	return use_content
+def get_accurate_data_ip(use_content):
+	global ip_number_hash_dic
+	ip_range_regs=[
+	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9]))) {0,1}- {0,1}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))',
+	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
+	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){2}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
+	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){1}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])'
+	]
+	for ip_range_reg in ip_range_regs:
+		ip_range=re.findall(ip_range_reg,use_content)
+		if ip_range!=[]:
+			if ip_range_regs.index(ip_range_reg)>0:
+				ip_begin,ip_end=ip_n_to_ip(ip_range[0])
+			else:
+				ip_begin=ip_range[0][0]
+				ip_end=ip_range[0][1]
+			#str_ip=str(ip_begin)+'~'+str(ip_end)
+			#print str_ip
+			ip_begin_num,ip_end_num=ip_to_number(ip_begin,ip_end)
+			ip_range_str=str(ip_begin_num)+str(ip_end_num)
+			h=md5(ip_range_str)#skip the same ip range
+			if ip_number_hash_dic.has_key(h):
+				return 0,0,0,0
+			else:
+				ip_number_hash_dic[h]=1
+				return 1,ip_begin_num,ip_end_num,h
+	return 0,0,0,0
+def whois_insert(ip_begin,ip_end,content,hash):
+	global my_mongo
+	if my_mongo.find({'hash':hash}).count()<=0:
+		content=content.decode("unicode_escape")
+		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+#deal the ip which like 1.01.02.03
+def deal_abnormal_ip(ip_begin,ip_end):
+	ip_begin_arr=ip_begin.split('.')
+	ip_end_arr=ip_end.split('.')
+	temp=[]
+	for c in ip_begin_arr:
+		c=str(int(c))
+		temp.append(c)
+	ip_begin='.'.join(temp)
+	temp=[]
+	for c in ip_end_arr:
+		c=str(int(c))
+		temp.append(c)
+	ip_end='.'.join(temp)
+	return ip_begin,ip_end
+
+def ip_to_number(raw_ip_begin,raw_ip_end):
+	#the ip may be not normal
+	try:
+		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_begin)))[0])
+		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(raw_ip_end)))[0])
+	except Exception as e:
+		ip_begin,ip_end=deal_abnormal_ip(raw_ip_begin,raw_ip_end)
+		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
+		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
+	return ip_begin_num,ip_end_num
+def md5(str):
+    import hashlib
+    m = hashlib.md5()  
+    m.update(str)
+    return m.hexdigest()
 '''
 Number of queries from an IP address – Unlimited [1]
 xNumber of queries passed by a proxy – Unlimited [1]
@@ -136,7 +223,7 @@ address – 20,000 per 24 hours [3]
 def whois_query(thread_name):
 	global ip_assign_list,limit_server_list_record
 	global break_thread_signal,wr_fp,wl_fp,ip_list
-	global write_left_ip_lock,write_result_lock,limit_server_lock
+	global write_left_ip_lock,write_result_lock,limit_server_lock,write_db_lock
 
 	while(len(ip_list)>0):
 		if break_thread_signal==1:
@@ -187,7 +274,7 @@ def whois_query(thread_name):
 				continue
 			if server=="whois.ripe.net":
 				print thread_name+" server:"+server+"query from local first"
-				data=do_query(ip,server="localhost",port="8888")
+				data=do_query(ip,server="10.10.11.130",port="8888")
 				#query no
 				if data.find("no entries found")>0 or len(data)==0:
 					data=do_query(ip)
@@ -213,6 +300,7 @@ def whois_query(thread_name):
 					if '"' in data:
 						data=data.replace('"','\\"')
 					data='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
+			#server is not ripe
 			else:
 				data=do_query(ip)
 				#data is null
@@ -233,12 +321,20 @@ def whois_query(thread_name):
 				if '"' in data:
 					data=data.replace('"','\\"')
 				#get int seconds
-				data='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
-			if write_result_lock.acquire(True):
-				wr_fp.write(data)
-				wr_fp.write('\n')
-				#wr_fp.flush()
-				write_result_lock.release()
+				data_dic='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
+			print "all left ip:"+str(len(ip_list))
+
+			use_content=get_accurate_whois_info(data)
+			flag,ip_begin_num,ip_end_num,h=get_accurate_data_ip(use_content)
+			if flag==1:
+				if write_result_lock.acquire(True):
+					wr_fp.write(data_dic)
+					wr_fp.write('\n')
+					#wr_fp.flush()
+					write_result_lock.release()
+				if write_db_lock.acquire(True):
+					whois_insert(ip_begin_num,ip_end_num,use_content,h)
+					write_db_lock.release()
 
 	print thread_name+" query completed!"
 
@@ -329,43 +425,47 @@ def init_ip_assign():
 		ip_a[1]=int(ip_a[1])
 		ip_assign_list.append(ip_a)
 def main():
-	if __name__=='__main__':
-		#break_thread_signal=0
-		i=0
-		#break_thread_signal=0
-		global ip_list,wr_fp,wl_fp,break_thread_signal,fetch_count
-		recover()
-		init_ip_assign()
-		thread_count=raw_input("please input the thread number:")
-		if thread_count=='':
-			thread_count=10
-		else:
-			thread_count=int(thread_count)
-		fetch_count=raw_input("please input the ip count fetch from queue for once:")
-		if fetch_count=='':
-			fetch_count=10
-		else:
-			fetch_count=int(fetch_count)
+	conn=MongoClient('127.0.0.1',27017)
+	db=conn.ly
+	global my_mongo
+	my_mongo=db.whois3
+	#break_thread_signal=0
+	i=0
+	#break_thread_signal=0
+	global ip_list,wr_fp,wl_fp,break_thread_signal,fetch_count
+	recover()
+	init_ip_assign()
+	thread_count=raw_input("please input the thread number:")
+	if thread_count=='':
+		thread_count=10
+	else:
+		thread_count=int(thread_count)
+	fetch_count=raw_input("please input the ip count fetch from queue for once:")
+	if fetch_count=='':
+		fetch_count=10
+	else:
+		fetch_count=int(fetch_count)
 
 
-		query_threads=[]
-		#create multithread
-		for i in range(0,thread_count):
-			t = threading.Thread(target=whois_query,args=("thread "+str(i),))
-			query_threads.append(t)
-		#run multithread 
-		for t in query_threads:
-			t.setDaemon(False)		#
-			t.start()
-		threading.Thread(target=break_keep).start()
-		for t in query_threads:
-			t.join()
-		wr_fp.close()
-		wl_fp.close
-		print "all query completed!"
-		break_thread_signal=2
-		print len(ip_list)
-		#for num in range(0,thread_count):
-		#	print str(parts[num][0])+'~'+str(parts[num][1])
-main()
+	query_threads=[]
+	#create multithread
+	for i in range(0,thread_count):
+		t = threading.Thread(target=whois_query,args=("thread "+str(i),))
+		query_threads.append(t)
+	#run multithread 
+	for t in query_threads:
+		t.setDaemon(False)		#
+		t.start()
+	threading.Thread(target=break_keep).start()
+	for t in query_threads:
+		t.join()
+	wr_fp.close()
+	wl_fp.close
+	print "all query completed!"
+	break_thread_signal=2
+	print len(ip_list)
+	#for num in range(0,thread_count):
+	#	print str(parts[num][0])+'~'+str(parts[num][1])
+if __name__=='__main__':
+	main()
 
