@@ -21,14 +21,16 @@ write_left_ip_lock=threading.Lock()
 ip_list_lock=threading.Lock()
 limit_server_lock=threading.Lock()
 write_db_lock=threading.Lock()
+write_log_lock=threading.Lock()
 break_thread_signal=0
 ip_list=[]
 ip_number_hash_dic={}
-wr_fp=0
-wl_fp=0
+w_whois_fp=0
+w_left_ip_fp=0
+w_log_fp=0
 fetch_count=5
 ip_assign_list=[]
-#[server,]
+#[server]=[time]
 limit_server_list_record={}
 def fetch_from_queue(thread_name):
 	global ip_list,ip_list_lock
@@ -211,6 +213,12 @@ def md5(str):
     m = hashlib.md5()  
     m.update(str)
     return m.hexdigest()
+def write_log(log):
+	global w_log_fp
+	w_log_fp.write(time.strftime("%Y-%m-%d %H:%M:%S",time.localtime()))
+	w_log_fp.write("\n")
+	w_log_fp.write(log)
+	w_log_fp.write("\n")
 '''
 Number of queries from an IP address – Unlimited [1]
 xNumber of queries passed by a proxy – Unlimited [1]
@@ -222,9 +230,8 @@ address – 20,000 per 24 hours [3]
 '''
 def whois_query(thread_name):
 	global ip_assign_list,limit_server_list_record
-	global break_thread_signal,wr_fp,wl_fp,ip_list
-	global write_left_ip_lock,write_result_lock,limit_server_lock,write_db_lock
-
+	global break_thread_signal,w_whois_fp,w_left_ip_fp,ip_list
+	global write_left_ip_lock,write_result_lock,limit_server_lock,write_db_lock,write_log_lock
 	while(len(ip_list)>0):
 		if break_thread_signal==1:
 			break
@@ -237,9 +244,9 @@ def whois_query(thread_name):
 				print thread_name+" stop!"
 				for j in range(i,ip_count):
 					if write_left_ip_lock.acquire(True):
-						wl_fp.write(thread_ip_list[j])
-						wl_fp.write('\n')
-						#wr_fp.flush()
+						w_left_ip_fp.write(thread_ip_list[j])
+						w_left_ip_fp.write('\n')
+						#w_whois_fp.flush()
 						write_left_ip_lock.release()
 				#the break must in this place,or will lost some ip
 				break
@@ -260,12 +267,18 @@ def whois_query(thread_name):
 					limit_flag=1
 					if time.time()-limit_server_list_record[server]>86400:
 						del limit_server_list_record[server]
-						print thread_name+" remove limite and push to queue,server:"+server+"ip:"+ip
+						log=thread_name+" remove limite and push to queue,server:"+server+"ip:"+ip
+						print log
+						#write log
+						if write_log_lock.acquire(True):
+							write_log(log)
+							write_log_lock.release()
 						#print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 						ip_push_into_queue(ip)
 						#continue
 					else:
-						print thread_name+" left limite: "+str(86400-time.time()+limit_server_list_record[server])+"s and push to queue,server:"+server+"ip:"+ip
+						log=thread_name+" left limite: "+str(86400-time.time()+limit_server_list_record[server])+"s and push to queue,server:"+server+"ip:"+ip
+						print log
 						#print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 						ip_push_into_queue(ip)
 						#continue
@@ -281,7 +294,8 @@ def whois_query(thread_name):
 					#data is null
 					if len(data)==0 or data=="Query rate limit exceeded" or data.find("access from your host has been permanently")>0:
 						#push to queue
-						print thread_name+" add limite and push to queue,server:"+server+" ip:"+ip
+						log=thread_name+" add limite and push to queue,server:"+server+" ip:"+ip
+						print log
 						ip_push_into_queue(thread_ip_list[i])
 						#互斥锁
 						if limit_server_lock.acquire(True):
@@ -289,6 +303,9 @@ def whois_query(thread_name):
 								pass
 							else:
 								limit_server_list_record[server]=time.time()
+								if write_log_lock.acquire(True):
+									write_log(log)
+									write_log_lock.release()
 							limit_server_lock.release()
 						#end 互斥锁
 						continue
@@ -328,9 +345,9 @@ def whois_query(thread_name):
 			flag,ip_begin_num,ip_end_num,h=get_accurate_data_ip(use_content)
 			if flag==1:
 				if write_result_lock.acquire(True):
-					wr_fp.write(data_dic)
-					wr_fp.write('\n')
-					#wr_fp.flush()
+					w_whois_fp.write(data_dic)
+					w_whois_fp.write('\n')
+					#w_whois_fp.flush()
 					write_result_lock.release()
 				if write_db_lock.acquire(True):
 					whois_insert(ip_begin_num,ip_end_num,use_content,h)
@@ -339,7 +356,7 @@ def whois_query(thread_name):
 	print thread_name+" query completed!"
 
 def break_keep():
-	global break_thread_signal,write_left_ip_lock,ip_list_lock,wl_fp,ip_list
+	global break_thread_signal,write_left_ip_lock,ip_list_lock,w_left_ip_fp,ip_list
 	while(True):
 		print "linsten_key:"
 		key=raw_input()
@@ -349,10 +366,10 @@ def break_keep():
 				print "begin write ip_list:"+str(len(ip_list))
 				if write_left_ip_lock.acquire(True):
 					for ip in ip_list:
-						wl_fp.write(ip)
-						wl_fp.write('\n')
+						w_left_ip_fp.write(ip)
+						w_left_ip_fp.write('\n')
 					write_left_ip_lock.release()
-					ip_list_lock.release()
+				ip_list_lock.release()
 				print "begin write ip_list:"+str(len(ip_list))
 				break_thread_signal=1
 			print "break_thread_signal:"+str(break_thread_signal)
@@ -365,8 +382,9 @@ def break_keep():
 #default all ip:./query_whois_raw_dir/all_ip
 
 def recover():
-	global ip_list,wr_fp,wl_fp
+	global ip_list,w_whois_fp,w_left_ip_fp,w_log_fp
 	recover_flag="n"
+	log_path="./query_whois_raw_dir/whois_query.log"
 	result_path="./query_whois_raw_dir/whois_query_result"
 	ip_left_path="./query_whois_raw_dir/left_ip"
 	recover_flag=raw_input("do you want recover?(y/n,default n):")
@@ -408,9 +426,9 @@ def recover():
 	ip_list=list(set(ip_list))
 	ip_count=len(ip_list)
 	print ip_count
-	wl_fp=open(ip_left_path,'w')
-	wr_fp=open(result_path,'a')
-
+	w_left_ip_fp=open(ip_left_path,'w')
+	w_whois_fp=open(result_path,'a')
+	w_log_fp=open(log_path,'a')
 def init_ip_assign():
 	global ip_assign_list
 	f=open('ip_del.h','r')
@@ -424,6 +442,18 @@ def init_ip_assign():
 		ip_a[0]=int(ip_a[0])
 		ip_a[1]=int(ip_a[1])
 		ip_assign_list.append(ip_a)
+def begin_log():
+	global w_log_fp
+	w_log_fp.write("\n\n")
+	str_time="****************query begin:"+str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))+"***********************"
+	w_log_fp.write(str_time)
+	w_log_fp.write("\n\n")
+def end_log():
+	global w_log_fp
+	w_log_fp.write("\n\n")
+	str_time="****************query end:"+str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))+"***********************"
+	w_log_fp.write(str_time)
+	w_log_fp.write("\n\n")
 def main():
 	conn=MongoClient('127.0.0.1',27017)
 	db=conn.ly
@@ -432,9 +462,11 @@ def main():
 	#break_thread_signal=0
 	i=0
 	#break_thread_signal=0
-	global ip_list,wr_fp,wl_fp,break_thread_signal,fetch_count
+	global ip_list,w_whois_fp,w_left_ip_fp,w_log_fp
+	global break_thread_signal,fetch_count
 	recover()
 	init_ip_assign()
+	begin_log()
 	thread_count=raw_input("please input the thread number:")
 	if thread_count=='':
 		thread_count=10
@@ -459,11 +491,13 @@ def main():
 	threading.Thread(target=break_keep).start()
 	for t in query_threads:
 		t.join()
-	wr_fp.close()
-	wl_fp.close
-	print "all query completed!"
+	end_log()
+	w_whois_fp.close()
+	w_left_ip_fp.close()
+	w_log_fp.close()
+	print "all query stop!"
 	break_thread_signal=2
-	print len(ip_list)
+	print "left ip: "+str(len(ip_list))
 	#for num in range(0,thread_count):
 	#	print str(parts[num][0])+'~'+str(parts[num][1])
 if __name__=='__main__':
