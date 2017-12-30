@@ -384,12 +384,12 @@ def break_keep():
 def recover():
 	global ip_list,w_whois_fp,w_left_ip_fp,w_log_fp
 	recover_flag="n"
-	log_path="./query_whois_raw_dir/whois_query.log"
-	result_path="./query_whois_raw_dir/whois_query_result"
-	ip_left_path="./query_whois_raw_dir/left_ip"
+	log_path="/data/query_whois_raw_dir/whois_query.log"
+	result_path="/data/query_whois_raw_dir/whois_query_result"
+	ip_left_path="/data/query_whois_raw_dir/left_ip"
 	recover_flag=raw_input("do you want recover?(y/n,default n):")
-	if os.path.exists("query_whois_raw_dir")==False:
-		os.makedirs("query_whois_raw_dir")
+	if os.path.exists("/data/query_whois_raw_dir")==False:
+		os.makedirs("/data/query_whois_raw_dir")
 		print "can not find query_whois_raw_dir dir,first run!"
 		recover_flag=''
 	if recover_flag=='':
@@ -409,7 +409,7 @@ def recover():
 		# ip_left_path=raw_input("please input ip left path:")
 		#recover_path=raw_input("please input ip recover path:")
 		if ip_path=='':
-			ip_path='./all_ip'
+			ip_path='/data/all_ip'
 		if ip_in_row=='':
 			ip_in_row=0
 		else:
