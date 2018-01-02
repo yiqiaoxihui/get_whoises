@@ -51,7 +51,42 @@ def ip_push_into_queue(ip):
 	if ip_list_lock.acquire():
 		ip_list.append(ip)
 		ip_list_lock.release()
-
+def ip_n_to_ip(ip_num):
+	#192.1.2.3/20
+	#print ip_num
+	i=ip_num[0].count('.')
+	if i==1:
+		ip=ip_num[0]+'.0.0'
+	elif i==2:
+		ip=ip_num[0]+'.0'
+	elif i==0:
+		ip=ip_num[0]+'.0.0.0'
+	else:
+		ip=ip_num[0]
+	#print ip
+	if int(ip_num[1])<32 and int(ip_num[1])>0:
+		#print ip_num[1]
+		ip_begin=""
+		ip_end=""
+		ip_int=int(ip_num[1])/8
+		ip_rem=int(ip_num[1])%8
+		elements=ip.split('.')
+		for i in range(0,ip_int):
+			ip_begin=ip_begin+elements[i]+'.'
+			ip_end=ip_end+elements[i]+'.'
+			#print ip_begin
+			#print ip_end
+		ip_begin=ip_begin+str(int(elements[ip_int])&(~((1<<(8-ip_rem))-1)))
+		ip_end=ip_end+str(int(elements[ip_int])|((1<<(8-ip_rem))-1))
+		if ip_int<3:
+			for i in range(ip_int+1,4):
+				ip_begin=ip_begin+'.'+'0'
+				ip_end=ip_end+'.'+'255'
+		return ip_begin,ip_end
+	elif int(ip_num[1])==32:
+		return ip,ip
+	else:
+		return '0.0.0.0','0.0.0.0'
 def ip_n_to_ip_list(ipn):
 	list=[]
 	ip_num=re.findall(r"(.+)\/(\d{1,2})",ipn)
@@ -152,6 +187,11 @@ def get_accurate_whois_info(raw_content):
 	return use_content
 def get_accurate_data_ip(use_content):
 	global ip_number_hash_dic
+	#the netrange reg rule:
+	#(\d+.\d+.\d+.\d+) - (\d+.\d+.\d+.\d+)
+	#x.x.x.x/n
+	#x.x.x/n
+	#x.x/n
 	ip_range_regs=[
 	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9]))) {0,1}- {0,1}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))',
 	r'(?:inetnum {0,1}: {0,1}|Network Number {0,}\] {0,1}|NetRange {0,1}: {0,1}|IPv4 Address {0,1}: {0,1})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))\/((?:[1-2][0-9])|(?:3[0-2])|[0-9])',
