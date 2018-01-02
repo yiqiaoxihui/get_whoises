@@ -352,11 +352,11 @@ def whois_query(thread_name):
 					#data is not null
 					if '"' in data:
 						data=data.replace('"','\\"')
-					data='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
+					data_dic='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
 				else:
 					if '"' in data:
 						data=data.replace('"','\\"')
-					data='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
+					data_dic='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
 			#server is not ripe
 			else:
 				data=do_query(ip)
