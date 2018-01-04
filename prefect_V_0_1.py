@@ -217,11 +217,13 @@ def get_accurate_data_ip(use_content):
 				ip_number_hash_dic[h]=1
 				return 1,ip_begin_num,ip_end_num,h
 	return 0,0,0,0
-def whois_insert(ip_begin,ip_end,content,hash):
-	global my_mongo
-	if my_mongo.find({'hash':hash}).count()<=0:
+def whois_insert(ip_begin,ip_end,content,hash,ip):
+	global mongo_whois,mongo_queryed
+	if mongo_whois.find({'hash':hash}).count()<=0:
 		content=content.decode("unicode_escape")
-		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+		mongo_whois.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+		if mongo_queryed.find({'ip':ip}).count()<=0:
+			mongo_queryed.insert({"ip":ip})
 #deal the ip which like 1.01.02.03
 def deal_abnormal_ip(ip_begin,ip_end):
 	ip_begin_arr=ip_begin.split('.')
@@ -272,6 +274,7 @@ def whois_query(thread_name):
 	global ip_assign_list,limit_server_list_record
 	global break_thread_signal,w_whois_fp,w_left_ip_fp,ip_list
 	global write_left_ip_lock,write_result_lock,limit_server_lock,write_db_lock,write_log_lock
+	global mongo_queryed
 	while(len(ip_list)>0):
 		if break_thread_signal==1:
 			break
@@ -293,6 +296,14 @@ def whois_query(thread_name):
 			print thread_name+' current ip:'+thread_ip_list[i]
 			server="whois.ripe.net"
 			ip=thread_ip_list[i]
+			#has query or not
+			has_query=0
+			if write_db_lock.acquire(True):
+				if mongo_queryed.find({'ip':ip}).count()>0:
+					has_query=1
+				write_db_lock.release()
+			if has_query==1:
+				continue
 			ipn=socket.ntohl(struct.unpack("I",socket.inet_aton(ip))[0])
 			for ip_a in ip_assign_list:
 				if((ipn&ip_a[1])==ip_a[0]):
@@ -325,6 +336,7 @@ def whois_query(thread_name):
 				limit_server_lock.release()
 			if limit_flag==1:
 				continue
+
 			if server=="whois.ripe.net":
 				print thread_name+" server:"+server+"query from local first"
 				data=do_query(ip,server="10.10.11.130",port="8888")
@@ -390,7 +402,7 @@ def whois_query(thread_name):
 					#w_whois_fp.flush()
 					write_result_lock.release()
 				if write_db_lock.acquire(True):
-					whois_insert(ip_begin_num,ip_end_num,use_content,h)
+					whois_insert(ip_begin_num,ip_end_num,use_content,h,ip)
 					write_db_lock.release()
 
 	print thread_name+" query completed!"
@@ -497,8 +509,9 @@ def end_log():
 def main():
 	conn=MongoClient('127.0.0.1',27017)
 	db=conn.ly
-	global my_mongo
-	my_mongo=db.whois3
+	global mongo_whois,mongo_queryed
+	mongo_queryed=db.queryed
+	mongo_whois=db.whois3
 	#break_thread_signal=0
 	i=0
 	#break_thread_signal=0
