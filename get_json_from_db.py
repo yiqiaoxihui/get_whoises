@@ -116,6 +116,7 @@ def get_useful_info_from_content(ip,content):
 				value=object_attr[position+len(key):].strip()
 				#value_position=position+len(key)+1 #+1 for : or ]
 				value=value[1:].strip()
+				#decode('unicode-escape')
 				value=value.decode('utf-8', errors='ignore').encode('utf-8')
 				if key in array_key:
 					if main_content_array_k_v["whois"].has_key(key):
@@ -156,19 +157,19 @@ a=0
 b=0
 whois_list=[]
 #print my_mongo.count()
-whois_filepath=raw_input("please input ip file path:")
+ip_filepath=raw_input("please input ip file path:")
 write2json_filepath=raw_input("please input write to json path:")
-if whois_filepath=='':
-	whois_filepath="/data/test4"
+if ip_filepath=='':
+	ip_filepath="/data/test4"
 if write2json_filepath=='':
 	write2json_filepath='/data/test1'
-whois_fp=open(whois_filepath,'r')#/home/ly/Documents/all
+ip_fp=open(ip_filepath,'r')#/home/ly/Documents/all
 fpw=open(write2json_filepath,"w")
 left_ip=[]
 json_list=[]
 count=0
 while True:
-	ip = whois_fp.readline()
+	ip = ip_fp.readline()
 	if ip=="":
 		break
 	else:
@@ -263,7 +264,7 @@ with open(write2json_filepath,'w') as json_file:
 # 	fpw.write(jsonStr)
 # 	fpw.write('\n')
 # 	del left_ip[0]
-whois_fp.close()
+ip_fp.close()
 fpw.close()
 
 

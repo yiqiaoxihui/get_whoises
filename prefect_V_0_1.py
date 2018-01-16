@@ -129,7 +129,7 @@ def ip_n_to_ip_list(ipn):
 				#print ip_begin+"~"+ip_end
 		ip_begin=ip_begin.split('.')
 		ip_end=ip_end.split('.')
-		for ip_0 in range(int(ip_begin[0]),int(ip_begin[0])+1):
+		for ip_0 in range(int(ip_begin[0]),int(ip_end[0])+1):
 			for ip_1 in range(int(ip_begin[1]),int(ip_end[1])+1):
 				for ip_2 in range(int(ip_begin[2]),int(ip_end[2])+1):
 					list.append(str(ip_0)+'.'+str(ip_1)+'.'+str(ip_2)+'.1')
@@ -461,7 +461,7 @@ def recover():
 		# ip_left_path=raw_input("please input ip left path:")
 		#recover_path=raw_input("please input ip recover path:")
 		if ip_path=='':
-			ip_path='/data/all_ip'
+			ip_path='/data/query_whois_raw_dir/all_ip'
 		if ip_in_row=='':
 			ip_in_row=0
 		else:

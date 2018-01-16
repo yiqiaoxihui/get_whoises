@@ -1,3 +1,4 @@
+#-*-coding:utf-8 -*-
 import re
 import os
 import socket
@@ -83,6 +84,7 @@ def ip_to_number(raw_ip_begin,raw_ip_end):
 def whois_insert(ip_begin,ip_end,content,hash):
 	global my_mongo
 	if my_mongo.find({'hash':hash}).count()<=0:
+		#将unicode内存编码值直接存储
 		content=content.decode("unicode_escape")
 		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 #some raw whois data maybe include more accurate ip whois info,
