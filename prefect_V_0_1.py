@@ -375,7 +375,8 @@ def whois_query(thread_name):
 				#data is null
 				if len(data)==0 or data=="Query rate limit exceeded" or data.find("access from your host has been permanently")>0:
 					#push to queue
-					print thread_name+" add limite and push to queue,server:"+server+" ip:"+ip
+					log=thread_name+" add limite and push to queue,server:"+server+" ip:"+ip
+					print log
 					ip_push_into_queue(thread_ip_list[i])
 					#互斥锁
 					if limit_server_lock.acquire(True):
@@ -383,6 +384,9 @@ def whois_query(thread_name):
 							pass
 						else:
 							limit_server_list_record[server]=time.time()
+							if write_log_lock.acquire(True):
+								write_log(log)
+								write_log_lock.release()
 						limit_server_lock.release()
 					#end 互斥锁
 					continue
