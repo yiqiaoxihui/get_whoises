@@ -474,11 +474,15 @@ def recover():
 		ip_list=ip_fp.readlines()
 		ip_fp.close()
 	ip_count=len(ip_list)
+	copy_left_ip_fp=open("/data/query_whois_raw_dir/left_ip.copy",'w')
 	for i in range(0,ip_count):
 		ip_list[i]=ip_list[i].split()[ip_in_row]
 		ip_list[i]=ip_list[i].strip()
+		copy_left_ip_fp.write(ip_list[i])
+		copy_left_ip_fp.write("\n")
 		#ip_list[i]=re.sub("\d*\/\d*","1",ip_list[i])
 		#print ip_list[i]
+	copy_left_ip_fp.close()
 	ip_list=list(set(ip_list))
 	ip_count=len(ip_list)
 	print ip_count
