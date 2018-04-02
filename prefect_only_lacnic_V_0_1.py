@@ -329,7 +329,7 @@ def whois_query(thread_name):
 						ip_push_into_queue(ip)
 						#continue
 					else:
-						log=thread_name+" left limite: "+str(86400-time.time()+limit_server_list_record[server])+"s and push to queue,server:"+server+"ip:"+ip
+						log=thread_name+" left limite: "+str(86400-time.time()+limit_server_list_record[server])+"s and push to queue,server:"+server+" ip:"+ip
 						print log
 						#print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 						ip_push_into_queue(ip)
