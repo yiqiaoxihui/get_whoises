@@ -250,8 +250,10 @@ def do_arin():
     retrieve_arin()
     unzip_arin()
     #deal_arin()
-def wait(left):
+def wait():
     day=datetime.datetime.now().day
+    apnic_left=(14-day+30)%30
+    arin_left=(19-day+30)%30
     s1="wait for next update(apnic,arin left "+str(apnic_left)+","+str(arin_left)+"day)\r"
     s2="wait for next update(apnic,arin left "+str(apnic_left)+","+str(arin_left)+"day).\r"
     s3="wait for next update(apnic,arin left "+str(apnic_left)+","+str(arin_left)+"day)..\r"

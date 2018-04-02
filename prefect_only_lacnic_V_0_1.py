@@ -294,8 +294,8 @@ def whois_query(thread_name):
 						write_left_ip_lock.release()
 				#the break must in this place,or will lost some ip
 				break
-			print thread_name+' current ip:'+thread_ip_list[i]
-			server="whois.ripe.net"
+			#print thread_name+' current ip:'+thread_ip_list[i]
+			server=""
 			ip=thread_ip_list[i]
 			#has query or not
 			has_query=0
@@ -308,7 +308,7 @@ def whois_query(thread_name):
 			ipn=socket.ntohl(struct.unpack("I",socket.inet_aton(ip))[0])
 			for ip_a in ip_assign_list:
 				if((ipn&ip_a[1])==ip_a[0]):
-					print thread_name+" ip:"+ip+" guest server:"+ip_a[2]
+					#print thread_name+" ip:"+ip+" guest server:"+ip_a[2]
 					server=ip_a[2]
 					break
 			#time is arrive,remove limit
@@ -319,7 +319,7 @@ def whois_query(thread_name):
 					limit_flag=1
 					if time.time()-limit_server_list_record[server]>86400:
 						del limit_server_list_record[server]
-						log=thread_name+" remove limite and push to queue,server:"+server+"ip:"+ip
+						log=thread_name+" remove limite and push to queue,server:"+server+" ip:"+ip
 						print log
 						#write log
 						if write_log_lock.acquire(True):
@@ -337,12 +337,12 @@ def whois_query(thread_name):
 				limit_server_lock.release()
 			if limit_flag==1:
 				continue
-
 			if server in not_lacnic_list:
 				continue;
 			#server is not lacnic
 			else:
 				data=do_query(ip)
+				print "query ip:"+ip+" server:"+server
 				#data is null
 				if len(data)==0 or data=="Query rate limit exceeded" or data.find("access from your host has been permanently")>0:
 					#push to queue
@@ -366,7 +366,7 @@ def whois_query(thread_name):
 					data=data.replace('"','\\"')
 				#get int seconds
 				data_dic='{"content":"'+data+'","ip":"'+ip+'","timestamp":"'+str(int(time.time()))+'"}'
-			print "all left ip:"+str(len(ip_list))
+			#print "all left ip:"+str(len(ip_list))
 
 			use_content=get_accurate_whois_info(data)
 			flag,ip_begin_num,ip_end_num,h=get_accurate_data_ip(use_content)
@@ -485,8 +485,8 @@ def main():
 	conn=MongoClient('127.0.0.1',27017)
 	db=conn.ly
 	global mongo_whois,mongo_queryed
-	mongo_queryed=db.queryed
-	mongo_whois=db.whois3
+	mongo_queryed=db.lacnic_queryed
+	mongo_whois=db.lacnic   #only get lacnic
 	#break_thread_signal=0
 	i=0
 	#break_thread_signal=0
