@@ -20,3 +20,6 @@ store mongodb:arin,apnic
 3.lacnic and other rir.eg.whois.nic.or.kr
 path:/home/hitnis/Document/get_whoises/prefect_only_lacnic_V_0_1.py
 store mongodb:lacnic
+
+4.web ui
+path:/var/www/html/test4c
