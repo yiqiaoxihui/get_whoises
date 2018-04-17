@@ -10,7 +10,12 @@ author:liuyang
 date:2017/12/16 20:15
 desrc:read the raw whois data,extract the beginip,endip and data,insert into mongodb
 '''
-
+def whois_insert(ip_begin,ip_end,content,hash):
+	global my_mongo
+	if my_mongo.find({'hash':hash}).count()<=0:
+		#将unicode内存编码值直接存储
+		content=content.decode("unicode_escape")
+		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
 def md5(str):
     import hashlib
     m = hashlib.md5()  
@@ -81,12 +86,7 @@ def ip_to_number(raw_ip_begin,raw_ip_end):
 		ip_begin_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_begin)))[0])
 		ip_end_num=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_end)))[0])
 	return ip_begin_num,ip_end_num
-def whois_insert(ip_begin,ip_end,content,hash):
-	global my_mongo
-	if my_mongo.find({'hash':hash}).count()<=0:
-		#将unicode内存编码值直接存储
-		content=content.decode("unicode_escape")
-		my_mongo.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+
 #some raw whois data maybe include more accurate ip whois info,
 #this function can find the most accurate ip whois info
 def get_accurate_whois_info(raw_content):

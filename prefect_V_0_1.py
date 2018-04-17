@@ -33,6 +33,13 @@ fetch_count=5
 ip_assign_list=[]
 #[server]=[time]
 limit_server_list_record={}
+def whois_insert(ip_begin,ip_end,content,hash,ip):
+	global mongo_whois,mongo_queryed
+	if mongo_whois.find({'hash':hash}).count()<=0:
+		content=content.decode("unicode_escape")
+		mongo_whois.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+		if mongo_queryed.find({'ip':ip}).count()<=0:
+			mongo_queryed.insert({"ip":ip})
 def fetch_from_queue(thread_name):
 	global ip_list,ip_list_lock
 	list=[]
@@ -218,13 +225,7 @@ def get_accurate_data_ip(use_content):
 				ip_number_hash_dic[h]=1
 				return 1,ip_begin_num,ip_end_num,h
 	return 0,0,0,0
-def whois_insert(ip_begin,ip_end,content,hash,ip):
-	global mongo_whois,mongo_queryed
-	if mongo_whois.find({'hash':hash}).count()<=0:
-		content=content.decode("unicode_escape")
-		mongo_whois.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
-		if mongo_queryed.find({'ip':ip}).count()<=0:
-			mongo_queryed.insert({"ip":ip})
+
 #deal the ip which like 1.01.02.03
 def deal_abnormal_ip(ip_begin,ip_end):
 	ip_begin_arr=ip_begin.split('.')

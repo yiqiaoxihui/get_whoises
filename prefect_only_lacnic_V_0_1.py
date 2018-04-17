@@ -218,10 +218,11 @@ def get_accurate_data_ip(use_content):
 				return 1,ip_begin_num,ip_end_num,h
 	return 0,0,0,0
 def whois_insert(ip_begin,ip_end,content,hash,ip):
+	insert_time=str(time.strftime("%Y-%m-%d %H:%M:%S",time.localtime()))
 	global mongo_whois,mongo_queryed
 	if mongo_whois.find({'hash':hash}).count()<=0:
 		content=content.decode("unicode_escape")
-		mongo_whois.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash})
+		mongo_whois.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"hash":hash,'time':insert_time})
 		if mongo_queryed.find({'ip':ip}).count()<=0:
 			mongo_queryed.insert({"ip":ip})
 #deal the ip which like 1.01.02.03
