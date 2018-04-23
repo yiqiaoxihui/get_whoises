@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 import os
 import os.path
@@ -10,6 +9,7 @@ import datetime
 import re
 import struct
 import socket
+import chardet
 from pymongo import MongoClient
 
 global apnic_download_file,arin_download_file
@@ -26,20 +26,7 @@ def insert_apnic_into_db():
     db=conn.ly
     #ripe=db.ripe
     apnic=db.apnic
-    #delete before insert update
     apnic.drop()
-    # arin=db.arin
-    # lacnic=db.lacnic
-    # ripe=db.ripe
-    # afrinic=db.afrinic
-    # db_handle={}
-    # db_handle["apnic"]=apnic
-    # db_handle["arin"]=arin
-    # db_handle["lacnic"]=lacnic
-    # db_handle["ripe"]=ripe
-    # db_handle["afrinic"]=afrinic
-    #afrinic=db.afrinic
-    #arin=db.arin
     dic={}
     reg=r'(?:inetnum {0,1}: {0,10})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9]))) {0,13}- {0,4}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))'
     #reg=r'inetnum.+(*).+-'
@@ -47,6 +34,8 @@ def insert_apnic_into_db():
         log.write(time.strftime("%Y-%m-%d %H:%M:%S",time.localtime())+"\nNot find when insert into db:apnic.db.inetnum+\n")
         return
     fr=open('./apnic.db.inetnum','r')
+    fencoding=chardet.detect(fr.readline())
+    fr.seek(0,0)
     #fw=open('./apnic_inetnum','w')
     sums=0
     all_ip=0
@@ -68,12 +57,27 @@ def insert_apnic_into_db():
                     #print ip_range[0][0]+"~"+ip_range[0][1]
                     ip_begin=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_range[0][0])))[0])
                     ip_end=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_range[0][1])))[0])
-                    content=content.encode('string-escape')
-                    #先用string 编码，要获得正确输出，先用string解码，再用gbk编码
-                    #if ip_range[0][0]=="210.77.169.72":
-                        #apnic is gbk
-                    #content=content.decode('gbk')
-                    apnic.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"time":insert_time})
+                    content=re.sub("\n{3,}","\n\n",content)
+                    content=re.sub(" {2,}", " ", content)
+                    fencoding=chardet.detect(content)   #一个破文件，里面什么编码都有，fuck
+                    #将内容按照unicode-escape格式解码成unicode,unicode-escape是unicode得内存编码值
+                    try:                                        #使用decode('unicode-escape')解码，遇到/N /U /u其后字符不符标准，转义会失败      
+                        content=content.decode('unicode-escape')
+                        #content=content.encode('string-escape')
+                        #print  "after:"+str(fencoding['encoding'])
+                        #先用string 编码，要获得正确输出，先用string解码，再用gbk编码
+                        #if ip_range[0][0]=="210.77.169.72":
+                            #apnic is gbk
+                        #content=content.decode('gbk')
+                        apnic.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"time":insert_time})
+                    except Exception as e:
+                        print e
+                        print 'find \N or \u or \U unicodeescape can not deal!'
+                        content=re.sub("\\\N", "\\\\\N", content)   #如果用decode('unicode-escape')，那么content不能存在\N或\U或\u这种转义符,                   
+                        content=re.sub("\\\u", "\\\\\u", content)   #如果存在这些符号，后面跟的内容必须是正确的转义规则所指的内容
+                        content=re.sub("\\\U", "\\\\\U", content)   #如果使用sub("\N", "\\N", content)，并不仅仅匹配\N，还会匹配所有的N                               
+                        content=content.decode('unicode-escape')
+                        apnic.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"time":insert_time})
                     #break
                     #print str(ip_begin)+"~"+str(ip_end)
             else:
@@ -166,6 +170,9 @@ def deal_arin():
     reg=r'(?:NetRange {0,1}: {0,10})((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9]))) {0,13}- {0,4}((?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:0{0,3}[1-9][0-9]\.)|(?:0{0,3}[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:0{0,3}[1-9][0-9])|(?:0{0,3}[0-9])))'
     #reg=r'inetnum.+(*).+-'
     fr=open('./arin_db.txt','r')
+    #first,judge it code type,then change to utf-8
+    fencoding=chardet.detect(fr.readline())
+    fr.seek(0,0)
     #fw=open('./apnic_inetnum','w')
     sums=0
     all_ip=0
@@ -188,9 +195,12 @@ def deal_arin():
                         #print ip_range[0][0]+"~"+ip_range[0][1]
                         ip_begin=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_range[0][0])))[0])
                         ip_end=socket.ntohl(struct.unpack("I",socket.inet_aton(str(ip_range[0][1])))[0])
-                        content=content.encode('string-escape')
-                        #apnic is gbk
-                        #content=content.decode('gbk')
+                        content=re.sub("\n{3,}","\n\n",content)
+                        content=re.sub(" {2,}", " ", content)
+                        content=content.strip() #delete whitespace in head or tail
+                        #content=content.decode(fencoding['encoding']).encode("utf-8")
+                        #content=content.encode('string-escape')#can be use
+                        #不转码也未出错
                         arin.insert({"ip_begin":ip_begin,"ip_end":ip_end,"content":content,"time":insert_time})
                         #print str(ip_begin)+"~"+str(ip_end)
                         break
@@ -304,4 +314,6 @@ def main():
 if __name__  =='__main__':
     #outpath="/home/hitnis/Document/whois-whois-1.87/dump/"
     main()
+
+
 
