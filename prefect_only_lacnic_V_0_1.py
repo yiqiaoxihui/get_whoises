@@ -262,6 +262,7 @@ def write_log(log):
 	w_log_fp.write("\n")
 	w_log_fp.write(log)
 	w_log_fp.write("\n")
+	w_log_fp.flush()
 '''
 Number of queries from an IP address – Unlimited [1]
 xNumber of queries passed by a proxy – Unlimited [1]
@@ -331,7 +332,7 @@ def whois_query(thread_name):
 						#continue
 					else:
 						log=thread_name+" left limite: "+str(86400-time.time()+limit_server_list_record[server])+"s and push to queue,server:"+server+" ip:"+ip
-						print log
+						#print log
 						#print thread_name+":"+"limit append to queue:"+thread_ip_list[i]
 						ip_push_into_queue(ip)
 						#continue
@@ -483,7 +484,7 @@ def end_log():
 	w_log_fp.write(str_time)
 	w_log_fp.write("\n\n")
 def main():
-	conn=MongoClient('127.0.0.1',27017)
+	conn=MongoClient('10.10.11.130',27017)
 	db=conn.ly
 	global mongo_whois,mongo_queryed
 	mongo_queryed=db.lacnic_queryed
