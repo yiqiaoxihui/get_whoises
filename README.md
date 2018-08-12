@@ -23,3 +23,9 @@ store mongodb:lacnic
 
 4.web ui
 path:/var/www/html/test4c
+</br>
+5.check error
+apache:/var/log/apache2/
+laravel:/var/www/html/test4c/storage/logs/
+
+
