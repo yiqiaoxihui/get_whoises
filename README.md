@@ -39,3 +39,8 @@ apache:/var/log/apache2/
 laravel:/var/www/html/test4c/storage/logs/
 
 
+6.mongodb
+6.1 shell:mongodb --host 10.10.11.130
+
+
+
